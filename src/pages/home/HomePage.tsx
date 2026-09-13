@@ -1,7 +1,194 @@
+import { useNavigate } from "react-router-dom";
+import { colors, radius } from "../../styles/theme";
+
+// TODO: reemplazar por datos reales cuando tasks.service.ts esté implementado
+const MOCK_TASKS_DONE = 2;
+const MOCK_TASKS_TOTAL = 10;
+
+interface HomeTile {
+  key: string;
+  label: string;
+  icon: string;
+  color: string;
+  onClick: () => void;
+}
+
 export function HomePage() {
+  const navigate = useNavigate();
+
+  function handleEmergency() {
+    // TODO: reemplazar el número fijo por el contacto de emergencia guardado en el perfil
+    // y registrar el evento en Firestore vía sos.service.ts (colección sosEvents)
+    window.location.href = "tel:131";
+  }
+
+  const tiles: HomeTile[] = [
+    {
+      key: "tasks",
+      label: "Tareas pendientes",
+      icon: "📋",
+      color: colors.success,
+      onClick: () => navigate("/tasks"),
+    },
+    {
+      key: "vitals",
+      label: "Signos vitales",
+      icon: "❤️",
+      color: colors.warning,
+      onClick: () => navigate("/vitals"),
+    },
+    {
+      key: "calendar",
+      label: "Calendario",
+      icon: "📅",
+      color: colors.info,
+      onClick: () => navigate("/calendar"),
+    },
+    {
+      key: "emergency",
+      label: "Emergencia",
+      icon: "🚨",
+      color: colors.emergency,
+      onClick: handleEmergency,
+    },
+  ];
+
+  const progressPct = Math.round((MOCK_TASKS_DONE / MOCK_TASKS_TOTAL) * 100);
+
   return (
-    <div>
-      <h1>HomePage</h1>
+    <div style={styles.page}>
+      <div style={styles.header}>
+        <div style={styles.avatarCircle}>
+          <span style={styles.avatarIcon}>👤</span>
+        </div>
+        {/* TODO: mostrar la fecha real del día en vez de un valor fijo */}
+        <span style={styles.headerDate}>
+          {new Date().toLocaleDateString("es-CL")}
+        </span>
+        <button
+          style={styles.syncButton}
+          onClick={() => navigate("/settings")}
+          aria-label="Sincronizar smartwatch"
+        >
+          ⌚
+        </button>
+      </div>
+
+      <div style={styles.content}>
+        <div style={styles.progressTrack}>
+          <div style={{ ...styles.progressFill, width: `${progressPct}%` }} />
+        </div>
+        <p style={styles.progressLabel}>
+          {MOCK_TASKS_DONE}/{MOCK_TASKS_TOTAL} TAREAS COMPLETAS
+        </p>
+
+        <div style={styles.grid}>
+          {tiles.map((tile) => (
+            <button
+              key={tile.key}
+              onClick={tile.onClick}
+              style={{ ...styles.tile, backgroundColor: tile.color }}
+            >
+              <span style={styles.tileIcon}>{tile.icon}</span>
+              <span style={styles.tileLabel}>{tile.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    backgroundColor: colors.background,
+    display: "flex",
+    flexDirection: "column",
+  },
+  header: {
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    padding: "20px 24px 28px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: "50%",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarIcon: {
+    fontSize: 18,
+  },
+  headerDate: {
+    color: "#FFFFFF",
+    fontWeight: 700,
+    fontSize: 15,
+  },
+  syncButton: {
+    width: 40,
+    height: 40,
+    borderRadius: "50%",
+    border: "none",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    fontSize: 18,
+    cursor: "pointer",
+  },
+  content: {
+    flex: 1,
+    padding: "20px",
+    marginTop: -12,
+  },
+  progressTrack: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: colors.border,
+    overflow: "hidden",
+    marginBottom: 12,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: colors.success,
+    borderRadius: 999,
+    transition: "width 0.3s ease",
+  },
+  progressLabel: {
+    textAlign: "center",
+    fontWeight: 700,
+    fontSize: 15,
+    color: colors.textPrimary,
+    marginBottom: 20,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 14,
+  },
+  tile: {
+    aspectRatio: "1 / 1",
+    borderRadius: radius.card,
+    border: "none",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    cursor: "pointer",
+  },
+  tileIcon: {
+    fontSize: 40,
+  },
+  tileLabel: {
+    color: "#FFFFFF",
+    fontWeight: 700,
+    fontSize: 15,
+    textAlign: "center",
+  },
+};
