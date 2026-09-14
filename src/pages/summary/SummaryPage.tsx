@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getRecentVitalReadings, type StoredVitalReading } from "../../services/vitals.service";
+import {
+  getRecentVitalReadings,
+  type StoredVitalReading,
+  VITAL_TYPES,
+} from "../../services/vitals.service";
 import { colors, radius } from "../../styles/theme";
 
 // TODO: reemplazar por el % real de cumplimiento del checklist cuando tasks.service.ts esté listo
@@ -10,7 +14,6 @@ const MOCK_ADHERENCIA_PCT = 95;
 const WEEKDAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 function weekdayIndex(date: Date): number {
-  // getDay(): 0=Domingo..6=Sábado → lo convertimos a 0=Lunes..6=Domingo
   return (date.getDay() + 6) % 7;
 }
 
@@ -78,12 +81,16 @@ const iconByType: Record<string, string> = {
   hidratacion: "🥤",
 };
 
+const CHART_WIDTH = 300;
+const CHART_HEIGHT = 140;
+
 export function SummaryPage() {
   const navigate = useNavigate();
   const { appUser } = useAuth();
   const [readings, setReadings] = useState<StoredVitalReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartTypeIndex, setChartTypeIndex] = useState(0);
 
   useEffect(() => {
     const elderUid = appUser?.uid ?? "dev-user"; // TODO: quitar el respaldo "dev-user" cuando DEV_SKIP_AUTH sea false
@@ -110,9 +117,13 @@ export function SummaryPage() {
     ? Math.round(presionReadings.reduce((sum, r) => sum + r.value.pulso, 0) / presionReadings.length)
     : null;
 
-  // Para el gráfico: última lectura de presión por día de esta semana (Lun..Dom)
+  // --- Gráfico genérico: cicla entre los tipos de VITAL_TYPES ---
+  const chartConfig = VITAL_TYPES[chartTypeIndex];
+  const chartFields = chartConfig.type === "presion" ? chartConfig.fields.slice(0, 2) : chartConfig.fields;
+  const chartReadings = readings.filter((r) => r.type === chartConfig.type);
+
   const chartByDay: (StoredVitalReading | null)[] = Array(7).fill(null);
-  for (const r of presionReadings) {
+  for (const r of chartReadings) {
     if (isSameWeek(r.recordedAt, now)) {
       const idx = weekdayIndex(r.recordedAt);
       if (!chartByDay[idx] || r.recordedAt > chartByDay[idx]!.recordedAt) {
@@ -121,17 +132,20 @@ export function SummaryPage() {
     }
   }
 
-  const chartWidth = 300;
-  const chartHeight = 140;
-  const yMin = 60;
-  const yMax = 160;
-  const stepX = chartWidth / 6;
+  const yMin = Math.min(...chartFields.map((f) => f.min));
+  const yMax = Math.max(...chartFields.map((f) => f.max));
+  const stepX = CHART_WIDTH / 6;
 
   function yToPixel(value: number) {
-    return chartHeight - ((value - yMin) / (yMax - yMin)) * chartHeight;
+    return CHART_HEIGHT - ((value - yMin) / (yMax - yMin)) * CHART_HEIGHT;
   }
 
-  function buildPath(field: "sistolica" | "diastolica"): string {
+  function fieldColor(idx: number) {
+    if (chartConfig.type === "presion") return idx === 0 ? colors.primary : colors.success;
+    return chartConfig.color;
+  }
+
+  function buildPath(fieldKey: string): string {
     let path = "";
     let drawing = false;
     chartByDay.forEach((r, i) => {
@@ -140,11 +154,18 @@ export function SummaryPage() {
         return;
       }
       const x = i * stepX;
-      const y = yToPixel(r.value[field]);
+      const y = yToPixel(r.value[fieldKey]);
       path += drawing ? ` L ${x} ${y}` : `M ${x} ${y}`;
       drawing = true;
     });
     return path;
+  }
+
+  function handlePrevType() {
+    setChartTypeIndex((i) => (i - 1 + VITAL_TYPES.length) % VITAL_TYPES.length);
+  }
+  function handleNextType() {
+    setChartTypeIndex((i) => (i + 1) % VITAL_TYPES.length);
   }
 
   const recentList = readings.slice(0, 5);
@@ -190,19 +211,36 @@ export function SummaryPage() {
           </div>
 
           <div style={styles.card}>
-            <p style={styles.cardTitle}>Presión arterial</p>
-            {presionReadings.length === 0 ? (
-              <p style={styles.emptyText}>Aún no hay mediciones de presión esta semana.</p>
+            <div style={styles.chartHeader}>
+              <button style={styles.arrowButton} onClick={handlePrevType} aria-label="Tipo anterior">
+                ‹
+              </button>
+              <p style={styles.cardTitle}>{chartConfig.label}</p>
+              <button style={styles.arrowButton} onClick={handleNextType} aria-label="Tipo siguiente">
+                ›
+              </button>
+            </div>
+
+            {chartReadings.length === 0 ? (
+              <p style={styles.emptyText}>Aún no hay mediciones de {chartConfig.label.toLowerCase()} esta semana.</p>
             ) : (
               <>
-                <svg width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} style={styles.chart}>
-                  <path d={buildPath("sistolica")} fill="none" stroke={colors.primary} strokeWidth={2} />
-                  <path d={buildPath("diastolica")} fill="none" stroke={colors.success} strokeWidth={2} />
+                <svg width="100%" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} style={styles.chart}>
+                  {chartFields.map((field, idx) => (
+                    <path key={field.key} d={buildPath(field.key)} fill="none" stroke={fieldColor(idx)} strokeWidth={2} />
+                  ))}
                   {chartByDay.map((r, i) =>
                     r ? (
                       <g key={i}>
-                        <circle cx={i * stepX} cy={yToPixel(r.value.sistolica)} r={3} fill={colors.primary} />
-                        <circle cx={i * stepX} cy={yToPixel(r.value.diastolica)} r={3} fill={colors.success} />
+                        {chartFields.map((field, idx) => (
+                          <circle
+                            key={field.key}
+                            cx={i * stepX}
+                            cy={yToPixel(r.value[field.key])}
+                            r={3}
+                            fill={fieldColor(idx)}
+                          />
+                        ))}
                       </g>
                     ) : null
                   )}
@@ -212,10 +250,16 @@ export function SummaryPage() {
                     <span key={label} style={styles.axisLabel}>{label}</span>
                   ))}
                 </div>
-                <div style={styles.legendRow}>
-                  <span style={styles.legendItem}><span style={{ ...styles.legendDot, backgroundColor: colors.primary }} /> Sistólica</span>
-                  <span style={styles.legendItem}><span style={{ ...styles.legendDot, backgroundColor: colors.success }} /> Diastólica</span>
-                </div>
+                {chartFields.length > 1 && (
+                  <div style={styles.legendRow}>
+                    {chartFields.map((field, idx) => (
+                      <span key={field.key} style={styles.legendItem}>
+                        <span style={{ ...styles.legendDot, backgroundColor: fieldColor(idx) }} />
+                        {field.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -269,7 +313,14 @@ const styles: Record<string, React.CSSProperties> = {
   card: {
     border: `1px solid ${colors.border}`, borderRadius: radius.card, padding: "16px", marginBottom: 16,
   },
-  cardTitle: { fontSize: 15, fontWeight: 700, color: colors.textPrimary, margin: "0 0 12px" },
+  chartHeader: {
+    display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12,
+  },
+  arrowButton: {
+    width: 32, height: 32, borderRadius: "50%", border: `1px solid ${colors.border}`,
+    backgroundColor: colors.surfaceMuted, fontSize: 18, cursor: "pointer", lineHeight: 1,
+  },
+  cardTitle: { fontSize: 15, fontWeight: 700, color: colors.textPrimary, margin: 0 },
   emptyText: { fontSize: 13, color: colors.textSecondary },
   chart: { display: "block" },
   axisRow: { display: "flex", justifyContent: "space-between", marginTop: 4 },
