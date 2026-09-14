@@ -5,7 +5,7 @@ import { colors, radius } from "../../styles/theme";
 const MOCK_TASKS_DONE = 2;
 const MOCK_TASKS_TOTAL = 10;
 
-interface HomeTile {
+interface HomeCard {
   key: string;
   label: string;
   icon: string;
@@ -22,7 +22,7 @@ export function HomePage() {
     window.location.href = "tel:131";
   }
 
-  const tiles: HomeTile[] = [
+  const cards: HomeCard[] = [
     {
       key: "tasks",
       label: "Tareas pendientes",
@@ -50,6 +50,13 @@ export function HomePage() {
       icon: "🚨",
       color: colors.emergency,
       onClick: handleEmergency,
+    },
+    {
+      key: "summary",
+      label: "Resumen",
+      icon: "📊",
+      color: colors.accent,
+      onClick: () => navigate("/summary"),
     },
   ];
 
@@ -82,15 +89,15 @@ export function HomePage() {
           {MOCK_TASKS_DONE}/{MOCK_TASKS_TOTAL} TAREAS COMPLETAS
         </p>
 
-        <div style={styles.grid}>
-          {tiles.map((tile) => (
+        <div style={styles.list}>
+          {cards.map((card) => (
             <button
-              key={tile.key}
-              onClick={tile.onClick}
-              style={{ ...styles.tile, backgroundColor: tile.color }}
+              key={card.key}
+              onClick={card.onClick}
+              style={{ ...styles.card, backgroundColor: card.color }}
             >
-              <span style={styles.tileIcon}>{tile.icon}</span>
-              <span style={styles.tileLabel}>{tile.label}</span>
+              <span style={styles.cardIconCircle}>{card.icon}</span>
+              <span style={styles.cardLabel}>{card.label}</span>
             </button>
           ))}
         </div>
@@ -166,29 +173,36 @@ const styles: Record<string, React.CSSProperties> = {
     color: colors.textPrimary,
     marginBottom: 20,
   },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 14,
-  },
-  tile: {
-    aspectRatio: "1 / 1",
-    borderRadius: radius.card,
-    border: "none",
+  list: {
     display: "flex",
     flexDirection: "column",
+    gap: 14,
+  },
+  card: {
+    display: "flex",
+    alignItems: "center",
+    gap: 16,
+    padding: "18px 20px",
+    borderRadius: radius.card,
+    border: "none",
+    cursor: "pointer",
+    width: "100%",
+  },
+  cardIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: "50%",
+    backgroundColor: "rgba(255,255,255,0.9)",
+    display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    cursor: "pointer",
+    fontSize: 22,
+    flexShrink: 0,
   },
-  tileIcon: {
-    fontSize: 40,
-  },
-  tileLabel: {
+  cardLabel: {
     color: "#FFFFFF",
     fontWeight: 700,
-    fontSize: 15,
-    textAlign: "center",
+    fontSize: 16,
+    textAlign: "left",
   },
 };

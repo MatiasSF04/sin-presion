@@ -14,6 +14,7 @@ export const colors = {
   background: "#FFFFFF",
   surfaceMuted: "#F7F8FA",
   border: "#E5E7EB",
+  accent: "#00A99D",
 };
 
 export const spacing = {
