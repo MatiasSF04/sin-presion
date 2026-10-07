@@ -19,7 +19,7 @@ import { CaregiverAlertsPage } from "../pages/caregiver/CaregiverAlertsPage";
 
 // [TEMPORAL] - CAMBIAR esto en false antes de la entrega o el pilotaje.
 // Mientras esté en true, se salta todo el flujo de login/PIN y entra directo a Home.
-const DEV_SKIP_AUTH = true;
+const DEV_SKIP_AUTH = false;
 
 export function AppRoutes() {
   const { firebaseReady, appUser, pinExists, pinUnlocked } = useAuth();

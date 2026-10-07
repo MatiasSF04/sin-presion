@@ -23,16 +23,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser && firebaseUser.emailVerified) {
-        const user = await fetchAppUser(firebaseUser.uid);
-        setAppUser(user);
-      } else {
+      try {
+        if (firebaseUser && firebaseUser.emailVerified) {
+          setAppUser(await fetchAppUser(firebaseUser.uid));
+        } else {
+          setAppUser(null);
+        }
+      } catch (e) {
+        console.error("No se pudo cargar el perfil del usuario", e);
         setAppUser(null);
+      } finally {
+        setFirebaseReady(true);
       }
-      setFirebaseReady(true);
     });
     return unsubscribe;
-  }, []);
+   }, []);
 
   const refreshPinStatus = () => setPinExists(hasSavedPin());
 

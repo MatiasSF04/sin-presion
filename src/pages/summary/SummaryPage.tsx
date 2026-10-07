@@ -93,7 +93,8 @@ export function SummaryPage() {
   const [chartTypeIndex, setChartTypeIndex] = useState(0);
 
   useEffect(() => {
-    const elderUid = appUser?.uid ?? "dev-user"; // TODO: quitar el respaldo "dev-user" cuando DEV_SKIP_AUTH sea false
+    const elderUid = appUser?.uid;
+    if (!elderUid) return;
     getRecentVitalReadings(elderUid, 50)
       .then(setReadings)
       .catch((err) => {

@@ -38,8 +38,8 @@ export function VitalsEntryPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      // TODO: reemplazar "dev-user" por appUser.uid una vez que el login real esté activo (DEV_SKIP_AUTH = false)
-      const elderUid = appUser?.uid ?? "dev-user";
+      const elderUid = appUser?.uid;
+      if (!elderUid) return;
       await addVitalReading(elderUid, config!.type, values, "manual");
       navigate("/home");
     } catch (err) {
