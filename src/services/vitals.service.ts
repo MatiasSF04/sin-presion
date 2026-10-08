@@ -90,6 +90,7 @@ export async function addVitalReading(
   value: Record<string, number>,
   source: "manual" | "device" = "manual"
 ) {
+  if (!elderUid) throw new Error("elderUid requerido para registrar una medición");
   await addDoc(collection(db, "vitalReadings"), {
     elderUid,
     type,

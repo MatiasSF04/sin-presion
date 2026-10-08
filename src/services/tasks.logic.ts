@@ -1,0 +1,244 @@
+// Lógica pura (sin Firebase ni Capacitor) del checklist, adherencia y recordatorios.
+// Todas las fechas "día" son strings locales "YYYY-MM-DD" para evitar problemas de zona horaria.
+
+export type TaskCategory = "medicamento" | "cita" | "ejercicio" | "medicion" | "otro";
+
+export type Recurrence =
+  | { kind: "none" }
+  | { kind: "daily" }
+  | { kind: "weekly"; days: number[] } // 0 = domingo … 6 = sábado
+  | { kind: "custom"; everyDays: number }; // cada N días (N >= 2)
+
+/** Lo que completa el usuario en el formulario (la "serie"). */
+export interface TaskDefinition {
+  title: string;
+  notes?: string;
+  category: TaskCategory;
+  time: string; // "HH:mm"
+  startDate: string; // "YYYY-MM-DD"
+  endDate?: string; // inclusive; si falta se usa el horizonte por defecto
+  recurrence: Recurrence;
+  /** Minutos antes de la hora para avisar. 0 = sin aviso previo. */
+  remindBeforeMin: number;
+  /** Avisar al día siguiente (09:00) si no fue marcada. */
+  notifyMissed: boolean;
+}
+
+/** Una ocurrencia concreta (un documento en Firestore). */
+export interface Task {
+  id: string;
+  elderUid: string;
+  seriesId: string;
+  title: string;
+  notes?: string;
+  category: TaskCategory;
+  dueDate: string;
+  time: string;
+  remindBeforeMin: number;
+  notifyMissed: boolean;
+  status: "pending" | "done";
+  completedAt?: Date;
+}
+
+export const HORIZON_DAYS = 60;
+export const MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS permite 64 pendientes
+export const MISSED_ALERT_HOUR = 9;
+
+// ---------- fechas ----------
+
+export function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function parseISODate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function addDays(iso: string, n: number): string {
+  const d = parseISODate(iso);
+  d.setDate(d.getDate() + n);
+  return toISODate(d);
+}
+
+function diffDays(a: string, b: string): number {
+  const ms = parseISODate(b).getTime() - parseISODate(a).getTime();
+  return Math.round(ms / 86_400_000);
+}
+
+/** Lunes de la semana de la fecha dada. */
+export function startOfWeek(iso: string): string {
+  const d = parseISODate(iso);
+  const dow = (d.getDay() + 6) % 7; // lunes = 0
+  return addDays(iso, -dow);
+}
+
+export function dueDateTime(dueDate: string, time: string): Date {
+  const [h, m] = time.split(":").map(Number);
+  const d = parseISODate(dueDate);
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+// ---------- repetición ----------
+
+/** Fechas en que ocurre la serie, desde startDate hasta min(endDate, startDate+HORIZON). */
+export function generateOccurrenceDates(def: TaskDefinition, horizonDays = HORIZON_DAYS): string[] {
+  const { startDate, recurrence } = def;
+  if (recurrence.kind === "none") return [startDate];
+
+  const hardEnd = addDays(startDate, horizonDays - 1);
+  const end = def.endDate && def.endDate < hardEnd ? def.endDate : hardEnd;
+  const total = diffDays(startDate, end);
+  const out: string[] = [];
+
+  for (let i = 0; i <= total; i++) {
+    const date = addDays(startDate, i);
+    if (recurrence.kind === "daily") {
+      out.push(date);
+    } else if (recurrence.kind === "weekly") {
+      if (recurrence.days.includes(parseISODate(date).getDay())) out.push(date);
+    } else {
+      const every = Math.max(2, Math.floor(recurrence.everyDays));
+      if (i % every === 0) out.push(date);
+    }
+  }
+  return out;
+}
+
+export function validateDefinition(def: TaskDefinition): string | null {
+  if (!def.title.trim()) return "Escribe el nombre de la tarea";
+  if (!/^\d{2}:\d{2}$/.test(def.time)) return "Indica la hora";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(def.startDate)) return "Indica la fecha de inicio";
+  if (def.endDate && def.endDate < def.startDate) return "La fecha final no puede ser anterior al inicio";
+  if (def.recurrence.kind === "weekly" && def.recurrence.days.length === 0) return "Elige al menos un día de la semana";
+  if (def.recurrence.kind === "custom" && !(def.recurrence.everyDays >= 2)) return "La repetición personalizada debe ser cada 2 días o más";
+  return null;
+}
+
+// ---------- progreso y adherencia ----------
+
+export interface Progress {
+  done: number;
+  total: number;
+  pct: number; // 0..100 entero
+}
+
+function pctOf(done: number, total: number): number {
+  return total === 0 ? 0 : Math.round((done / total) * 100);
+}
+
+/** Avance del checklist de un día: completadas / programadas ese día. */
+export function computeDayProgress(tasks: Task[], dateISO: string): Progress {
+  const day = tasks.filter((t) => t.dueDate === dateISO);
+  const done = day.filter((t) => t.status === "done").length;
+  return { done, total: day.length, pct: pctOf(done, day.length) };
+}
+
+/**
+ * Adherencia en un rango [fromISO, toISO]: completadas / (completadas + vencidas).
+ * Las pendientes cuya hora aún no llega NO cuentan (todavía no se incumplen).
+ */
+export function computeAdherence(tasks: Task[], fromISO: string, toISO: string, now: Date): Progress {
+  let done = 0;
+  let due = 0;
+  for (const t of tasks) {
+    if (t.dueDate < fromISO || t.dueDate > toISO) continue;
+    if (t.status === "done") {
+      done++;
+      due++;
+    } else if (dueDateTime(t.dueDate, t.time) <= now) {
+      due++;
+    }
+  }
+  return { done, total: due, pct: pctOf(done, due) };
+}
+
+/** Adherencia de la semana en curso (lunes → hoy). */
+export function computeWeeklyAdherence(tasks: Task[], now: Date): Progress {
+  const today = toISODate(now);
+  return computeAdherence(tasks, startOfWeek(today), today, now);
+}
+
+// ---------- estado visual ----------
+
+export type TaskState = "done" | "overdue" | "pending";
+
+export function taskState(t: Task, now: Date): TaskState {
+  if (t.status === "done") return "done";
+  return dueDateTime(t.dueDate, t.time) < now ? "overdue" : "pending";
+}
+
+// ---------- plan de notificaciones locales ----------
+
+export type NotificationKind = "reminder" | "missed";
+
+export interface PlannedNotification {
+  id: number;
+  taskId: string;
+  kind: NotificationKind;
+  at: Date;
+  title: string;
+  body: string;
+}
+
+/** ID entero estable (positivo, 31 bits) a partir de taskId + tipo. Permite cancelar/reprogramar sin duplicar. */
+export function notificationId(taskId: string, kind: NotificationKind): number {
+  const s = `${taskId}:${kind}`;
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return Math.abs(h) % 2_147_483_647 || 1;
+}
+
+/**
+ * Construye las notificaciones futuras a programar:
+ *  - "reminder": remindBeforeMin antes de la hora (si es > 0 y todavía no pasó).
+ *  - "missed": 09:00 del día siguiente si la tarea sigue pendiente y notifyMissed.
+ * Se ordenan por fecha y se recortan al límite que soporta iOS.
+ */
+export function buildNotificationPlan(
+  tasks: Task[],
+  now: Date,
+  limit = MAX_SCHEDULED_NOTIFICATIONS
+): PlannedNotification[] {
+  const plan: PlannedNotification[] = [];
+
+  for (const t of tasks) {
+    if (t.status === "done") continue;
+    const due = dueDateTime(t.dueDate, t.time);
+
+    if (t.remindBeforeMin > 0) {
+      const at = new Date(due.getTime() - t.remindBeforeMin * 60_000);
+      if (at > now) {
+        plan.push({
+          id: notificationId(t.id, "reminder"),
+          taskId: t.id,
+          kind: "reminder",
+          at,
+          title: "Recordatorio",
+          body: `${t.title} a las ${t.time}`,
+        });
+      }
+    }
+
+    if (t.notifyMissed) {
+      const at = parseISODate(addDays(t.dueDate, 1));
+      at.setHours(MISSED_ALERT_HOUR, 0, 0, 0);
+      if (at > now) {
+        plan.push({
+          id: notificationId(t.id, "missed"),
+          taskId: t.id,
+          kind: "missed",
+          at,
+          title: "Tarea sin completar",
+          body: `Ayer no marcaste: ${t.title}`,
+        });
+      }
+    }
+  }
+
+  return plan.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, limit);
+}
