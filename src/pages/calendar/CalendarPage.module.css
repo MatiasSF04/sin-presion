@@ -1,0 +1,137 @@
+.pagina {
+  padding: var(--espacio-5) var(--espacio-5) 100px;
+}
+
+.navegacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--espacio-3);
+}
+
+.mes {
+  font-size: var(--texto-base);
+  text-transform: capitalize;
+}
+
+.flecha {
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border-radius: 50%;
+  border: 1.5px solid var(--color-borde);
+  background: var(--color-fondo);
+  font-size: var(--texto-lg);
+}
+
+.semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--espacio-1);
+}
+
+.dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 72px;
+  padding: var(--espacio-2) 0;
+  border-radius: var(--radio-chip);
+  border: 1.5px solid var(--color-borde);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+.diaHoy {
+  border-color: var(--color-primario);
+}
+
+.diaActivo {
+  background: var(--color-primario);
+  color: var(--color-sobre-color);
+}
+
+.diaNombre {
+  font-size: var(--texto-xs);
+}
+
+.diaNumero {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-fuerte);
+}
+
+.diaEstado {
+  min-height: 18px;
+  font-size: 12px; /* única excepción a la escala: debe caber en 1/7 del ancho */
+  color: var(--color-texto-secundario);
+}
+
+.diaEstadoVencido {
+  color: var(--color-emergencia);
+}
+
+.diaActivo .diaEstado {
+  color: var(--color-sobre-color);
+}
+
+.diaSeleccionado {
+  margin: var(--espacio-5) 0 var(--espacio-3);
+  font-size: var(--texto-lg);
+  text-transform: capitalize;
+}
+
+.mensaje {
+  color: var(--color-texto-secundario);
+}
+
+.error {
+  color: var(--color-emergencia);
+}
+
+.tarea {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-3);
+  padding: var(--espacio-4);
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.tareaTextos {
+  flex: 1;
+  min-width: 0;
+}
+
+.tareaTitulo {
+  font-size: var(--texto-base);
+  font-weight: var(--peso-medio);
+}
+
+.tareaDetalle {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.etiqueta {
+  flex-shrink: 0;
+  padding: var(--espacio-1) var(--espacio-3);
+  border-radius: var(--radio-chip);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-medio);
+}
+
+.etiquetaHecha {
+  color: var(--color-exito);
+  background: var(--color-exito-suave);
+}
+
+.etiquetaVencida {
+  color: var(--color-emergencia);
+  background: var(--color-emergencia-suave);
+}
+
+.etiquetaPendiente {
+  color: var(--color-advertencia-texto);
+  background: var(--color-advertencia-suave);
+}

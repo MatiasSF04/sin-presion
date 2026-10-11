@@ -1,0 +1,21 @@
+.aviso {
+  width: 100%;
+  min-height: var(--tamano-toque);
+  margin-bottom: var(--espacio-4);
+  padding: var(--espacio-4);
+  border: none;
+  border-radius: var(--radio-tarjeta);
+  text-align: left;
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+}
+
+.vencidas {
+  background: var(--color-emergencia-suave);
+  color: var(--color-emergencia);
+}
+
+.proximas {
+  background: var(--color-advertencia-suave);
+  color: var(--color-advertencia-texto);
+}

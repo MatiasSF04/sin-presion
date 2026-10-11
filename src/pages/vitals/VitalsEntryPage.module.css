@@ -1,0 +1,52 @@
+.pagina {
+  min-height: 100svh;
+  padding: var(--espacio-5);
+}
+
+.etiquetaCampo {
+  margin-bottom: var(--espacio-3);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+  text-align: center;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.paso {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radio-chip);
+  border: 1.5px solid var(--color-borde);
+  background: var(--color-fondo);
+  font-size: var(--texto-xl);
+}
+
+.valor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.numero {
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-fuerte);
+}
+
+.unidad {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.nota {
+  margin-bottom: var(--espacio-5);
+  padding: var(--espacio-4);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-info-suave);
+  font-size: var(--texto-sm);
+  text-align: center;
+}

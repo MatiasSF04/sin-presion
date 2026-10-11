@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import {
   clearSavedPin,
   getSavedUid,
@@ -8,6 +8,9 @@ import {
   signOut,
   verifyPin,
 } from "../../services/auth.service";
+import { Boton } from "../../components/base/Boton";
+import { unirClases } from "../../estilos/unirClases";
+import s from "./Acceso.module.css";
 
 const PIN_LENGTH = 4;
 const MAX_ATTEMPTS = 5;
@@ -129,112 +132,38 @@ export function PinUnlockPage() {
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
   return (
-    <div style={styles.container}>
-      <div style={styles.avatarCircle}>
-        <span style={styles.avatarIcon}>🔒</span>
-      </div>
+    <div className={s.pantalla}>
+      <div className={s.avatarPin} aria-hidden="true">🔒</div>
 
-      <h1 style={styles.title}>{title}</h1>
-      <p style={styles.subtitle}>{subtitle}</p>
+      <h1 className={s.titulo}>{title}</h1>
+      <p className={s.subtituloPin}>{subtitle}</p>
 
-      <div style={styles.dotsRow} aria-label={`${digits.length} de ${PIN_LENGTH} dígitos`}>
+      <div className={s.puntos} role="status" aria-label={`${digits.length} de ${PIN_LENGTH} dígitos`}>
         {Array.from({ length: PIN_LENGTH }).map((_, i) => (
-          <span
-            key={i}
-            style={{ ...styles.dot, ...(i < digits.length ? styles.dotFilled : {}) }}
-          />
+          <span key={i} className={unirClases(s.punto, i < digits.length && s.puntoLleno)} />
         ))}
       </div>
 
-      <p style={styles.errorText}>{error || " "}</p>
+      <p className={s.errorPin} role="alert">{error || " "}</p>
 
-      <div style={styles.keypad}>
+      <div className={s.teclado}>
         {keys.map((k) => (
-          <button key={k} type="button" style={styles.key} onClick={() => pushDigit(k)}>
+          <button key={k} type="button" className={s.tecla} onClick={() => pushDigit(k)}>
             {k}
           </button>
         ))}
         <span />
-        <button type="button" style={styles.key} onClick={() => pushDigit("0")}>
+        <button type="button" className={s.tecla} onClick={() => pushDigit("0")}>
           0
         </button>
-        <button type="button" style={styles.key} onClick={popDigit} aria-label="Borrar">
+        <button type="button" className={s.tecla} onClick={popDigit} aria-label="Borrar">
           ⌫
         </button>
       </div>
 
-      <button type="button" onClick={handleForgot} style={styles.linkButton}>
+      <Boton variante="enlace" onClick={handleForgot}>
         {step === "unlock" ? "¿Olvidaste tu PIN? Entrar con correo" : "Cancelar y volver al inicio"}
-      </button>
+      </Boton>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: "100vh",
-    backgroundColor: "#5B6EF5",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "24px",
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: "50%",
-    backgroundColor: "rgba(255,255,255,0.25)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  avatarIcon: { fontSize: 36 },
-  title: { color: "#FFFFFF", fontSize: 28, fontWeight: 700, margin: "0 0 4px", textAlign: "center" },
-  subtitle: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 16,
-    margin: "0 0 24px",
-    textAlign: "center",
-    maxWidth: 320,
-  },
-  dotsRow: { display: "flex", gap: 16, marginBottom: 8 },
-  dot: {
-    width: 20,
-    height: 20,
-    borderRadius: "50%",
-    border: "2px solid #FFFFFF",
-    backgroundColor: "transparent",
-    display: "inline-block",
-  },
-  dotFilled: { backgroundColor: "#FFFFFF" },
-  errorText: { color: "#FFE3E3", fontSize: 14, textAlign: "center", margin: "4px 0 12px", minHeight: 20 },
-  keypad: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 76px)",
-    gap: 14,
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  key: {
-    width: 76,
-    height: 76,
-    borderRadius: "50%",
-    border: "none",
-    backgroundColor: "rgba(255,255,255,0.95)",
-    color: "#1F2937",
-    fontSize: 28,
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  linkButton: {
-    background: "none",
-    border: "none",
-    color: "#FFFFFF",
-    textDecoration: "underline",
-    fontSize: 15,
-    cursor: "pointer",
-    padding: 8,
-  },
-};

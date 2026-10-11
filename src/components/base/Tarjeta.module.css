@@ -1,0 +1,14 @@
+.tarjeta {
+  border-radius: var(--radio-tarjeta);
+  padding: var(--espacio-4);
+  margin-bottom: var(--espacio-4);
+}
+
+.borde {
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+}
+
+.suave {
+  background: var(--color-superficie);
+}

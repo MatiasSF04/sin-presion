@@ -1,0 +1,29 @@
+.chip {
+  min-height: var(--tamano-toque);
+  padding: var(--espacio-2) var(--espacio-4);
+  border-radius: var(--radio-chip);
+  border: 1.5px solid var(--color-borde);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-normal);
+}
+
+.activo {
+  border-color: var(--color-primario);
+  background: var(--color-primario-suave);
+  color: var(--color-primario);
+  font-weight: var(--peso-medio);
+}
+
+.redondo {
+  width: var(--tamano-toque);
+  padding: 0;
+  border-radius: 50%;
+  font-weight: var(--peso-medio);
+}
+
+.redondo.activo {
+  background: var(--color-primario);
+  color: var(--color-sobre-color);
+}

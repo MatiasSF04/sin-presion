@@ -1,0 +1,81 @@
+.pagina {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--espacio-5) var(--espacio-6) 28px;
+  border-radius: 0 0 28px 28px;
+  background: var(--color-primario);
+}
+
+.circulo {
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--texto-lg);
+  background: var(--color-velo-claro);
+}
+
+.fecha {
+  color: var(--color-sobre-color);
+  font-size: var(--texto-base);
+  font-weight: var(--peso-fuerte);
+}
+
+.contenido {
+  flex: 1;
+  padding: var(--espacio-5);
+}
+
+.progreso {
+  margin: var(--espacio-3) 0 var(--espacio-5);
+  text-align: center;
+  font-size: var(--texto-base);
+  font-weight: var(--peso-fuerte);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+}
+
+.tarjeta {
+  width: 100%;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+  padding: var(--espacio-4) var(--espacio-5);
+  border: none;
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-tarjeta);
+}
+
+.tarjetaIcono {
+  flex-shrink: 0;
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--color-velo-opaco);
+}
+
+.tarjetaEtiqueta {
+  color: var(--color-sobre-color);
+  font-size: var(--texto-base);
+  font-weight: var(--peso-fuerte);
+  text-align: left;
+}

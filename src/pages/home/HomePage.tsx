@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
 import { ReminderBanner } from "../../components/shared/ReminderBanner";
 import { computeDayProgress, toISODate } from "../../services/tasks.logic";
-import { colors, radius } from "../../styles/theme";
+import { BarraProgreso } from "../../components/base/BarraProgreso";
+import s from "./HomePage.module.css";
 
 interface HomeCard {
   key: string;
   label: string;
   icon: string;
+  /** Referencia a un token de color, p. ej. "var(--color-exito)". */
   color: string;
   onClick: () => void;
 }
@@ -41,184 +43,79 @@ export function HomePage() {
       key: "tasks",
       label: "Tareas pendientes",
       icon: "📋",
-      color: colors.success,
+      color: "var(--color-exito)",
       onClick: () => navigate("/tasks"),
     },
     {
       key: "vitals",
       label: "Signos vitales",
       icon: "❤️",
-      color: colors.warning,
+      color: "var(--color-advertencia)",
       onClick: () => navigate("/vitals"),
     },
     {
       key: "calendar",
       label: "Calendario",
       icon: "📅",
-      color: colors.info,
+      color: "var(--color-info)",
       onClick: () => navigate("/calendar"),
     },
     {
       key: "emergency",
       label: "Emergencia",
       icon: "🚨",
-      color: colors.emergency,
+      color: "var(--color-emergencia)",
       onClick: handleEmergency,
     },
     {
       key: "summary",
       label: "Resumen",
       icon: "📊",
-      color: colors.accent,
+      color: "var(--color-acento)",
       onClick: () => navigate("/summary"),
     },
   ];
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div style={styles.avatarCircle}>
-          <span style={styles.avatarIcon}>👤</span>
-        </div>
-        {/* TODO: mostrar la fecha real del día en vez de un valor fijo */}
-        <span style={styles.headerDate}>
-          {new Date().toLocaleDateString("es-CL")}
-        </span>
+    <div className={s.pagina}>
+      <header className={s.encabezado}>
+        <span className={s.circulo} aria-hidden="true">👤</span>
+        <span className={s.fecha}>{now.toLocaleDateString("es-CL")}</span>
         <button
-          style={styles.syncButton}
+          type="button"
+          className={s.circulo}
           onClick={() => navigate("/settings")}
           aria-label="Sincronizar smartwatch"
         >
-          ⌚
+          <span aria-hidden="true">⌚</span>
         </button>
-      </div>
+      </header>
 
-      <div style={styles.content}>
+      <main className={s.contenido}>
         <ReminderBanner tasks={todays} now={now} onGo={() => navigate("/tasks")} />
 
-        <div style={styles.progressTrack}>
-          <div style={{ ...styles.progressFill, width: `${progress.pct}%` }} />
-        </div>
-        <p style={styles.progressLabel}>
+        <BarraProgreso porcentaje={progress.pct} etiqueta="Tareas completadas hoy" />
+        <p className={s.progreso}>
           {progress.total === 0
-            ? "SIN TAREAS PARA HOY"
-            : `${progress.done}/${progress.total} TAREAS COMPLETAS`}
+            ? "Sin tareas para hoy"
+            : `${progress.done} de ${progress.total} tareas completas`}
         </p>
 
-        <div style={styles.list}>
+        <nav className={s.lista}>
           {cards.map((card) => (
             <button
               key={card.key}
+              type="button"
               onClick={card.onClick}
-              style={{ ...styles.card, backgroundColor: card.color }}
+              className={s.tarjeta}
+              style={{ "--color-tarjeta": card.color } as CSSProperties}
             >
-              <span style={styles.cardIconCircle}>{card.icon}</span>
-              <span style={styles.cardLabel}>{card.label}</span>
+              <span className={s.tarjetaIcono} aria-hidden="true">{card.icon}</span>
+              <span className={s.tarjetaEtiqueta}>{card.label}</span>
             </button>
           ))}
-        </div>
-      </div>
+        </nav>
+      </main>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    backgroundColor: colors.background,
-    display: "flex",
-    flexDirection: "column",
-  },
-  header: {
-    backgroundColor: colors.primary,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    padding: "20px 24px 28px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: "50%",
-    backgroundColor: "rgba(255,255,255,0.25)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarIcon: {
-    fontSize: 18,
-  },
-  headerDate: {
-    color: "#FFFFFF",
-    fontWeight: 700,
-    fontSize: 15,
-  },
-  syncButton: {
-    width: 40,
-    height: 40,
-    borderRadius: "50%",
-    border: "none",
-    backgroundColor: "rgba(255,255,255,0.25)",
-    fontSize: 18,
-    cursor: "pointer",
-  },
-  content: {
-    flex: 1,
-    padding: "20px",
-    marginTop: -12,
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: colors.border,
-    overflow: "hidden",
-    marginBottom: 12,
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: colors.success,
-    borderRadius: 999,
-    transition: "width 0.3s ease",
-  },
-  progressLabel: {
-    textAlign: "center",
-    fontWeight: 700,
-    fontSize: 15,
-    color: colors.textPrimary,
-    marginBottom: 20,
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
-  },
-  card: {
-    display: "flex",
-    alignItems: "center",
-    gap: 16,
-    padding: "18px 20px",
-    borderRadius: radius.card,
-    border: "none",
-    cursor: "pointer",
-    width: "100%",
-  },
-  cardIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: "50%",
-    backgroundColor: "rgba(255,255,255,0.9)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 22,
-    flexShrink: 0,
-  },
-  cardLabel: {
-    color: "#FFFFFF",
-    fontWeight: 700,
-    fontSize: 16,
-    textAlign: "left",
-  },
-};

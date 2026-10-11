@@ -18,6 +18,7 @@ export interface VitalTypeConfig {
   type: VitalType;
   label: string;
   icon: string;
+  /** Colores como referencias a los tokens de estilos/tokens.css. */
   color: string;
   colorLight: string;
   fields: VitalFieldConfig[];
@@ -29,8 +30,8 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     type: "presion",
     label: "Presión",
     icon: "❤️",
-    color: "#E53946",
-    colorLight: "#FDECEC",
+    color: "var(--color-emergencia)",
+    colorLight: "var(--color-emergencia-suave)",
     fields: [
       { key: "sistolica", label: "Sistólica", unit: "mmHg", min: 60, max: 220, step: 1, default: 120 },
       { key: "diastolica", label: "Diastólica", unit: "mmHg", min: 40, max: 140, step: 1, default: 80 },
@@ -42,40 +43,40 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     type: "temperatura",
     label: "Temperatura",
     icon: "🌡️",
-    color: "#F2A93B",
-    colorLight: "#FDF3E3",
+    color: "var(--color-advertencia)",
+    colorLight: "var(--color-advertencia-suave)",
     fields: [{ key: "valor", label: "Temperatura", unit: "°C", min: 34, max: 42, step: 0.1, default: 36.5 }],
   },
   {
     type: "sueno",
     label: "Sueño",
     icon: "🌙",
-    color: "#6C63FF",
-    colorLight: "#F0EEFF",
+    color: "var(--color-info)",
+    colorLight: "var(--color-info-suave)",
     fields: [{ key: "horas", label: "Horas dormidas", unit: "h", min: 0, max: 14, step: 0.5, default: 7 }],
   },
   {
     type: "azucar",
     label: "Azúcar",
     icon: "💧",
-    color: "#F2A93B",
-    colorLight: "#FDF3E3",
+    color: "var(--color-advertencia)",
+    colorLight: "var(--color-advertencia-suave)",
     fields: [{ key: "valor", label: "Glicemia", unit: "mg/dL", min: 40, max: 400, step: 1, default: 100 }],
   },
   {
     type: "pasos",
     label: "Pasos",
     icon: "📈",
-    color: "#22A559",
-    colorLight: "#E8F8EE",
+    color: "var(--color-exito)",
+    colorLight: "var(--color-exito-suave)",
     fields: [{ key: "cantidad", label: "Pasos", unit: "pasos", min: 0, max: 30000, step: 100, default: 1000 }],
   },
   {
     type: "hidratacion",
     label: "Hidratación",
     icon: "🥤",
-    color: "#5B6EF5",
-    colorLight: "#EEF0FF",
+    color: "var(--color-primario)",
+    colorLight: "var(--color-primario-suave)",
     fields: [{ key: "vasos", label: "Vasos de agua", unit: "vasos", min: 0, max: 20, step: 1, default: 4 }],
   },
 ];

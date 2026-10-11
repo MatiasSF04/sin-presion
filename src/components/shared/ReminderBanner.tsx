@@ -1,4 +1,5 @@
-import { colors, radius } from "../../styles/theme";
+import { unirClases } from "../../estilos/unirClases";
+import s from "./ReminderBanner.module.css";
 import { dueDateTime, type Task } from "../../services/tasks.logic";
 
 interface Props {
@@ -23,18 +24,15 @@ export function ReminderBanner({ tasks, now, onGo }: Props) {
   if (active.length === 0) return null;
 
   const overdue = active.filter((t) => dueDateTime(t.dueDate, t.time) < now).length;
-  const bg = overdue > 0 ? colors.emergencyLight : colors.warningLight;
-  const fg = overdue > 0 ? colors.emergency : "#9A6410";
 
   return (
     <button
+      type="button"
       onClick={onGo}
-      style={{
-        width: "100%", textAlign: "left", cursor: "pointer", marginBottom: 16, padding: 16,
-        background: bg, color: fg, border: "none", borderRadius: radius.card, fontSize: 16, fontWeight: 600,
-      }}
+      className={unirClases(s.aviso, overdue > 0 ? s.vencidas : s.proximas)}
     >
-      🔔 {overdue > 0 ? `${overdue} tarea(s) sin marcar` : `${active.length} tarea(s) próximas`} — toca para completar
+      <span aria-hidden="true">🔔 </span>
+      {overdue > 0 ? `${overdue} tarea(s) sin marcar` : `${active.length} tarea(s) próximas`} — toca para completar
     </button>
   );
 }

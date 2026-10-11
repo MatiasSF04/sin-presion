@@ -1,10 +1,18 @@
-import { useMemo, useState, type CSSProperties } from "react";
-import { useAuth } from "../../context/AuthContext";
-import { colors, radius } from "../../styles/theme";
+import { useMemo, useState } from "react";
+import { useAuth } from "../../context/useAuth";
 import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
 import { addDays, parseISODate, startOfWeek, taskState, toISODate } from "../../services/tasks.logic";
+import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
+import { unirClases } from "../../estilos/unirClases";
+import s from "./CalendarPage.module.css";
 
 const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+const ETIQUETAS_ESTADO = {
+  done: { texto: "Hecha", clase: s.etiquetaHecha },
+  overdue: { texto: "Sin marcar", clase: s.etiquetaVencida },
+  pending: { texto: "Pendiente", clase: s.etiquetaPendiente },
+} as const;
 
 export function CalendarPage() {
   const { appUser } = useAuth();
@@ -25,31 +33,32 @@ export function CalendarPage() {
   const label = parseISODate(weekStart).toLocaleDateString("es-CL", { month: "long", year: "numeric" });
 
   return (
-    <div style={s.page}>
-      <h1 style={s.h1}>Calendario</h1>
+    <div className={s.pagina}>
+      <EncabezadoPagina titulo="Calendario" volverA="/home" />
 
-      <div style={s.nav}>
-        <button style={s.navBtn} onClick={() => setWeekStart(addDays(weekStart, -7))}>‹</button>
-        <strong style={{ textTransform: "capitalize" }}>{label}</strong>
-        <button style={s.navBtn} onClick={() => setWeekStart(addDays(weekStart, 7))}>›</button>
+      <div className={s.navegacion}>
+        <button type="button" className={s.flecha} onClick={() => setWeekStart(addDays(weekStart, -7))} aria-label="Semana anterior">‹</button>
+        <strong className={s.mes}>{label}</strong>
+        <button type="button" className={s.flecha} onClick={() => setWeekStart(addDays(weekStart, 7))} aria-label="Semana siguiente">›</button>
       </div>
 
-      <div style={s.week}>
+      <div className={s.semana}>
         {days.map((d, i) => {
           const list = byDay.get(d) ?? [];
           const pending = list.filter((t) => t.status === "pending").length;
           const overdue = list.some((t) => taskState(t, now) === "overdue");
           const active = d === selected;
           return (
-            <button key={d} onClick={() => setSelected(d)} style={{
-              ...s.day,
-              background: active ? colors.primary : colors.background,
-              color: active ? "#fff" : colors.textPrimary,
-              borderColor: d === today ? colors.primary : colors.border,
-            }}>
-              <span style={{ fontSize: 12 }}>{WEEKDAYS[i]}</span>
-              <span style={{ fontSize: 18, fontWeight: 700 }}>{parseISODate(d).getDate()}</span>
-              <span style={{ fontSize: 11, height: 14, color: active ? "#fff" : overdue ? colors.emergency : colors.textSecondary }}>
+            <button
+              key={d}
+              type="button"
+              aria-pressed={active}
+              onClick={() => setSelected(d)}
+              className={unirClases(s.dia, d === today && s.diaHoy, active && s.diaActivo)}
+            >
+              <span className={s.diaNombre}>{WEEKDAYS[i]}</span>
+              <span className={s.diaNumero}>{parseISODate(d).getDate()}</span>
+              <span className={unirClases(s.diaEstado, overdue && s.diaEstadoVencido)}>
                 {pending > 0 ? `${pending} pend.` : list.length > 0 ? "✓" : ""}
               </span>
             </button>
@@ -57,41 +66,26 @@ export function CalendarPage() {
         })}
       </div>
 
-      <h2 style={s.h2}>
+      <h2 className={s.diaSeleccionado}>
         {parseISODate(selected).toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
       </h2>
-      {error && <p style={{ color: colors.emergency }}>No se pudo cargar: {error}</p>}
-      {loading && <p style={{ color: colors.textSecondary }}>Cargando…</p>}
-      {!loading && selectedTasks.length === 0 && <p style={{ color: colors.textSecondary }}>Sin tareas este día.</p>}
+      {error && <p className={s.error} role="alert">No se pudo cargar: {error}</p>}
+      {loading && <p className={s.mensaje}>Cargando…</p>}
+      {!loading && selectedTasks.length === 0 && <p className={s.mensaje}>Sin tareas este día.</p>}
       {selectedTasks.map((t) => {
-        const st = taskState(t, now);
-        const tag = st === "done" ? ["Hecha", colors.success, colors.successLight]
-          : st === "overdue" ? ["Sin marcar", colors.emergency, colors.emergencyLight]
-          : ["Pendiente", colors.warning, colors.warningLight];
+        const etiqueta = ETIQUETAS_ESTADO[taskState(t, now)];
         return (
-          <div key={t.id} style={s.item}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 600 }}>{t.title}</div>
-              <div style={{ fontSize: 14, color: colors.textSecondary }}>
+          <div key={t.id} className={s.tarea}>
+            <div className={s.tareaTextos}>
+              <div className={s.tareaTitulo}>{t.title}</div>
+              <div className={s.tareaDetalle}>
                 {t.time}{t.remindBeforeMin > 0 ? ` · aviso ${t.remindBeforeMin} min antes` : ""}
               </div>
             </div>
-            <span style={{ ...s.tag, color: tag[1], background: tag[2] }}>{tag[0]}</span>
+            <span className={unirClases(s.etiqueta, etiqueta.clase)}>{etiqueta.texto}</span>
           </div>
         );
       })}
     </div>
   );
 }
-
-const s: Record<string, CSSProperties> = {
-  page: { padding: 20, maxWidth: 520, margin: "0 auto", paddingBottom: 100 },
-  h1: { fontSize: 26, margin: "0 0 16px", color: colors.textPrimary },
-  h2: { fontSize: 18, margin: "20px 0 10px", textTransform: "capitalize", color: colors.textPrimary },
-  nav: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  navBtn: { width: 40, height: 40, borderRadius: 20, border: `1.5px solid ${colors.border}`, background: colors.background, fontSize: 20, cursor: "pointer" },
-  week: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 },
-  day: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 0", borderRadius: radius.chip, border: "1.5px solid", cursor: "pointer" },
-  item: { display: "flex", alignItems: "center", gap: 12, padding: 14, marginBottom: 10, border: `1.5px solid ${colors.border}`, borderRadius: radius.card },
-  tag: { fontSize: 13, fontWeight: 600, padding: "4px 10px", borderRadius: 10 },
-};

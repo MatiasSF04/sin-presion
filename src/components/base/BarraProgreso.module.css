@@ -1,0 +1,14 @@
+.pista {
+  height: 12px;
+  border-radius: var(--radio-completo);
+  background: var(--color-borde);
+  overflow: hidden;
+}
+
+.relleno {
+  width: var(--avance, 0%);
+  height: 100%;
+  border-radius: var(--radio-completo);
+  background: var(--color-exito);
+  transition: width var(--transicion);
+}

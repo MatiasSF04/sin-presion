@@ -1,0 +1,101 @@
+.pagina {
+  padding: var(--espacio-5) var(--espacio-5) 100px;
+}
+
+.resumenFila {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--texto-base);
+}
+
+.barra {
+  margin-top: var(--espacio-3);
+}
+
+.adherencia {
+  margin-top: var(--espacio-3);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.adherenciaBuena {
+  color: var(--color-exito);
+}
+
+.adherenciaBaja {
+  color: var(--color-advertencia-texto);
+}
+
+.mensaje {
+  margin-bottom: var(--espacio-4);
+  color: var(--color-texto-secundario);
+}
+
+.error {
+  margin-bottom: var(--espacio-4);
+  color: var(--color-emergencia);
+}
+
+.tarea {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-4);
+  margin-bottom: var(--espacio-3);
+  padding: var(--espacio-4);
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-fondo);
+}
+
+.tareaVencida {
+  border-color: var(--color-emergencia);
+}
+
+.marca {
+  flex-shrink: 0;
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border-radius: 50%;
+  border: 2px solid var(--color-borde);
+  background: var(--color-fondo);
+  color: var(--color-sobre-color);
+  font-size: var(--texto-xl);
+}
+
+.marcaHecha {
+  border-color: var(--color-exito);
+  background: var(--color-exito);
+}
+
+.tareaTextos {
+  flex: 1;
+  min-width: 0;
+}
+
+.tareaTitulo {
+  font-size: var(--texto-base);
+  font-weight: var(--peso-medio);
+}
+
+.tareaTituloHecha {
+  text-decoration: line-through;
+  color: var(--color-texto-secundario);
+}
+
+.tareaHora {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.tareaHoraVencida {
+  color: var(--color-emergencia);
+}
+
+.eliminar {
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border: none;
+  background: none;
+  font-size: var(--texto-lg);
+  opacity: 0.7;
+}

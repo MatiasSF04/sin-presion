@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getVitalTypeConfig, addVitalReading } from "../../services/vitals.service";
-import { useAuth } from "../../context/AuthContext";
-import { colors, radius } from "../../styles/theme";
+import { useAuth } from "../../context/useAuth";
+import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
+import { Boton } from "../../components/base/Boton";
+import { Tarjeta } from "../../components/base/Tarjeta";
+import s from "./VitalsEntryPage.module.css";
 
 export function VitalsEntryPage() {
   const navigate = useNavigate();
@@ -20,9 +23,9 @@ export function VitalsEntryPage() {
 
   if (!config) {
     return (
-      <div style={styles.page}>
+      <div className={s.pagina}>
+        <EncabezadoPagina titulo="Medición" volverA="/vitals" />
         <p>Tipo de medición no reconocido.</p>
-        <button onClick={() => navigate("/vitals")}>Volver</button>
       </div>
     );
   }
@@ -49,160 +52,47 @@ export function VitalsEntryPage() {
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <button style={styles.backButton} onClick={() => navigate("/vitals")}>
-          ←
-        </button>
-        <span style={{ ...styles.headerIcon, backgroundColor: config.colorLight }}>
-          {config.icon}
-        </span>
-        <div>
-          <h1 style={styles.title}>{config.label}</h1>
-          <p style={styles.subtitle}>Ingresa tu medición</p>
-        </div>
-      </div>
+    <div className={s.pagina} style={{ "--color-icono": config.colorLight } as CSSProperties}>
+      <EncabezadoPagina
+        titulo={config.label}
+        subtitulo="Ingresa tu medición"
+        volverA="/vitals"
+        icono={config.icon}
+      />
 
       {config.fields.map((field) => (
-        <div key={field.key} style={styles.fieldBlock}>
-          <p style={styles.fieldLabel}>{field.label}</p>
-          <div style={styles.stepperRow}>
+        <Tarjeta key={field.key} variante="suave">
+          <p className={s.etiquetaCampo}>{field.label}</p>
+          <div className={s.fila}>
             <button
-              style={styles.stepperButton}
+              type="button"
+              className={s.paso}
               onClick={() => adjust(field.key, -field.step)}
               aria-label={`Disminuir ${field.label}`}
             >
               −
             </button>
-            <div style={styles.stepperValue}>
-              <span style={styles.valueNumber}>{values[field.key]}</span>
-              <span style={styles.valueUnit}>{field.unit}</span>
+            <div className={s.valor} aria-live="polite">
+              <span className={s.numero}>{values[field.key]}</span>
+              <span className={s.unidad}>{field.unit}</span>
             </div>
             <button
-              style={styles.stepperButton}
+              type="button"
+              className={s.paso}
               onClick={() => adjust(field.key, field.step)}
               aria-label={`Aumentar ${field.label}`}
             >
               +
             </button>
           </div>
-        </div>
+        </Tarjeta>
       ))}
 
-      {config.normalRangeNote && (
-        <div style={styles.noteBox}>
-          <p style={styles.noteText}>{config.normalRangeNote}</p>
-        </div>
-      )}
+      {config.normalRangeNote && <p className={s.nota}>{config.normalRangeNote}</p>}
 
-      <button style={styles.saveButton} onClick={handleSave} disabled={saving}>
+      <Boton variante="emergencia" bloque onClick={handleSave} disabled={saving}>
         {saving ? "Guardando..." : "Guardar registro"}
-      </button>
+      </Boton>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    backgroundColor: colors.background,
-    padding: "20px",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 24,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: "50%",
-    border: `1px solid ${colors.border}`,
-    backgroundColor: colors.background,
-    fontSize: 18,
-    cursor: "pointer",
-  },
-  headerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 18,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 700,
-    color: colors.textPrimary,
-    margin: 0,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    margin: 0,
-  },
-  fieldBlock: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.card,
-    padding: "16px",
-    marginBottom: 14,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: colors.textSecondary,
-    margin: "0 0 12px",
-  },
-  stepperRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  stepperButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    border: `1px solid ${colors.border}`,
-    backgroundColor: colors.background,
-    fontSize: 22,
-    cursor: "pointer",
-  },
-  stepperValue: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  },
-  valueNumber: {
-    fontSize: 26,
-    fontWeight: 700,
-    color: colors.textPrimary,
-  },
-  valueUnit: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  noteBox: {
-    backgroundColor: colors.infoLight,
-    borderRadius: radius.card,
-    padding: "14px",
-    marginBottom: 20,
-  },
-  noteText: {
-    fontSize: 13,
-    color: colors.textPrimary,
-    margin: 0,
-  },
-  saveButton: {
-    width: "100%",
-    padding: "16px",
-    fontSize: 16,
-    fontWeight: 700,
-    borderRadius: radius.button,
-    border: "none",
-    backgroundColor: colors.emergency,
-    color: "#FFFFFF",
-    cursor: "pointer",
-  },
-};

@@ -1,0 +1,72 @@
+/*
+ * Tokens de diseño de SIN-PRESIÓN.
+ * Única fuente de colores, tipografía, espaciados, radios y tamaños de toque.
+ * Los componentes y pantallas usan estas variables; no se escriben colores ni
+ * tamaños fijos en otros archivos.
+ */
+:root {
+  /* ---------- Colores de marca y estado ---------- */
+  --color-primario: #5b6ef5;
+  --color-primario-suave: #eef0ff;
+  --color-emergencia: #e53946;
+  --color-emergencia-suave: #fdecec;
+  --color-exito: #22a559;
+  --color-exito-suave: #e8f8ee;
+  --color-advertencia: #f2a93b;
+  --color-advertencia-suave: #fdf3e3;
+  --color-advertencia-texto: #9a6410;
+  --color-info: #6c63ff;
+  --color-info-suave: #f0eeff;
+  --color-acento: #00a99d;
+
+  /* ---------- Texto y superficies ---------- */
+  --color-texto: #1f2933;
+  --color-texto-secundario: #6b7280;
+  --color-fondo: #ffffff;
+  --color-superficie: #f7f8fa;
+  --color-borde: #e5e7eb;
+  --color-sobre-color: #ffffff; /* texto sobre fondos de color */
+  --color-sobre-color-suave: rgba(255, 255, 255, 0.85);
+  --color-velo-claro: rgba(255, 255, 255, 0.25); /* círculos sobre fondos de color */
+  --color-velo-opaco: rgba(255, 255, 255, 0.92); /* teclas del PIN e íconos sobre color */
+  --color-error-sobre-color: #ffe3e3;
+
+  /* ---------- Tipografía ----------
+   * Escala pensada para adultos mayores: el texto de lectura nunca baja de 16px
+   * y solo marcas muy breves (ejes de gráfico, insignias) usan 14px.
+   */
+  --fuente: system-ui, "Segoe UI", Roboto, sans-serif;
+  --texto-xs: 14px;
+  --texto-sm: 16px;
+  --texto-base: 18px;
+  --texto-lg: 20px;
+  --texto-xl: 24px;
+  --texto-2xl: 28px;
+  --peso-normal: 400;
+  --peso-medio: 600;
+  --peso-fuerte: 700;
+  --interlineado: 1.45;
+
+  /* ---------- Espaciado ---------- */
+  --espacio-1: 4px;
+  --espacio-2: 8px;
+  --espacio-3: 12px;
+  --espacio-4: 16px;
+  --espacio-5: 20px;
+  --espacio-6: 24px;
+  --espacio-8: 32px;
+
+  /* ---------- Radios ---------- */
+  --radio-chip: 12px;
+  --radio-boton: 14px;
+  --radio-tarjeta: 16px;
+  --radio-completo: 999px;
+
+  /* ---------- Accesibilidad ---------- */
+  --tamano-toque: 48px; /* alto/ancho mínimo de cualquier control táctil */
+  --ancho-contenido: 560px;
+  --foco: 3px solid var(--color-primario);
+
+  /* ---------- Movimiento ---------- */
+  --transicion: 0.3s ease;
+}

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
 import { computeWeeklyAdherence } from "../../services/tasks.logic";
 import {
@@ -8,7 +7,10 @@ import {
   type StoredVitalReading,
   VITAL_TYPES,
 } from "../../services/vitals.service";
-import { colors, radius } from "../../styles/theme";
+import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
+import { Tarjeta } from "../../components/base/Tarjeta";
+import { unirClases } from "../../estilos/unirClases";
+import s from "./SummaryPage.module.css";
 
 const WEEKDAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -56,20 +58,28 @@ function formatValue(reading: StoredVitalReading): string {
   }
 }
 
-function statusBadge(reading: StoredVitalReading): { label: string; color: string; bg: string } | null {
+type Tono = "exito" | "info" | "emergencia";
+
+function statusBadge(reading: StoredVitalReading): { label: string; tono: Tono } | null {
   if (reading.type === "presion") {
     const { sistolica, diastolica } = reading.value;
-    if (sistolica <= 120 && diastolica <= 80) return { label: "Óptima", color: colors.success, bg: colors.successLight };
-    if (sistolica <= 139 && diastolica <= 89) return { label: "Normal", color: colors.info, bg: colors.infoLight };
-    return { label: "Alta", color: colors.emergency, bg: colors.emergencyLight };
+    if (sistolica <= 120 && diastolica <= 80) return { label: "Óptima", tono: "exito" };
+    if (sistolica <= 139 && diastolica <= 89) return { label: "Normal", tono: "info" };
+    return { label: "Alta", tono: "emergencia" };
   }
   if (reading.type === "temperatura") {
     const t = reading.value.valor;
-    if (t >= 36 && t <= 37.5) return { label: "Normal", color: colors.success, bg: colors.successLight };
-    return { label: t > 37.5 ? "Fiebre" : "Baja", color: colors.emergency, bg: colors.emergencyLight };
+    if (t >= 36 && t <= 37.5) return { label: "Normal", tono: "exito" };
+    return { label: t > 37.5 ? "Fiebre" : "Baja", tono: "emergencia" };
   }
   return null;
 }
+
+const CLASE_TONO: Record<Tono, string> = {
+  exito: s.insigniaExito,
+  info: s.insigniaInfo,
+  emergencia: s.insigniaEmergencia,
+};
 
 const iconByType: Record<string, string> = {
   presion: "❤️",
@@ -84,7 +94,6 @@ const CHART_WIDTH = 300;
 const CHART_HEIGHT = 140;
 
 export function SummaryPage() {
-  const navigate = useNavigate();
   const { appUser } = useAuth();
   const { tasks } = useUpcomingTasks(appUser?.uid);
   const [readings, setReadings] = useState<StoredVitalReading[]>([]);
@@ -143,7 +152,7 @@ export function SummaryPage() {
   }
 
   function fieldColor(idx: number) {
-    if (chartConfig.type === "presion") return idx === 0 ? colors.primary : colors.success;
+    if (chartConfig.type === "presion") return idx === 0 ? "var(--color-primario)" : "var(--color-exito)";
     return chartConfig.color;
   }
 
@@ -173,63 +182,55 @@ export function SummaryPage() {
   const recentList = readings.slice(0, 5);
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <button style={styles.backButton} onClick={() => navigate("/home")}>
-          ←
-        </button>
-        <div>
-          <h1 style={styles.title}>Resumen</h1>
-          <p style={styles.subtitle}>{readings.length} registro(s) guardado(s)</p>
-        </div>
-      </div>
+    <div className={s.pagina}>
+      <EncabezadoPagina titulo="Resumen" subtitulo={`${readings.length} registro(s) guardado(s)`} volverA="/home" />
 
-      {loading && <p style={styles.loadingText}>Cargando mediciones...</p>}
-      {error && <p style={styles.errorText}>{error}</p>}
+      {loading && <p className={s.mensaje}>Cargando mediciones...</p>}
+      {error && <p className={s.error} role="alert">{error}</p>}
 
       {!loading && !error && (
         <>
-          <div style={styles.tileGrid}>
-            <div style={{ ...styles.tile, backgroundColor: colors.primary }}>
-              <p style={styles.tileValue}>{avgSistolica ?? "—"}/{avgDiastolica ?? "—"}</p>
-              <p style={styles.tileLabel}>mmHg</p>
-              <p style={styles.tileCaption}>Promedio P/A</p>
+          <div className={s.indicadores}>
+            <div className={unirClases(s.indicador, s.indicadorPrimario)}>
+              <p className={s.indicadorValor}>{avgSistolica ?? "—"}/{avgDiastolica ?? "—"}</p>
+              <p className={s.indicadorUnidad}>mmHg</p>
+              <p className={s.indicadorNombre}>Promedio P/A</p>
             </div>
-            <div style={{ ...styles.tile, backgroundColor: colors.emergency }}>
-              <p style={styles.tileValue}>{avgPulso ?? "—"}</p>
-              <p style={styles.tileLabel}>ppm</p>
-              <p style={styles.tileCaption}>Pulso medio</p>
+            <div className={unirClases(s.indicador, s.indicadorEmergencia)}>
+              <p className={s.indicadorValor}>{avgPulso ?? "—"}</p>
+              <p className={s.indicadorUnidad}>ppm</p>
+              <p className={s.indicadorNombre}>Pulso medio</p>
             </div>
-            <div style={{ ...styles.tile, backgroundColor: colors.success }}>
-              <p style={styles.tileValue}>{adherence.total === 0 ? "—" : `${adherence.pct}%`}</p>
-              <p style={styles.tileLabel}>tareas (semana)</p>
-              <p style={styles.tileCaption}>Adherencia</p>
+            <div className={unirClases(s.indicador, s.indicadorExito)}>
+              <p className={s.indicadorValor}>{adherence.total === 0 ? "—" : `${adherence.pct}%`}</p>
+              <p className={s.indicadorUnidad}>tareas (semana)</p>
+              <p className={s.indicadorNombre}>Adherencia</p>
             </div>
-            <div style={{ ...styles.tile, backgroundColor: colors.info }}>
-              <p style={styles.tileValue}>{weekReadings.length}</p>
-              <p style={styles.tileLabel}>mediciones</p>
-              <p style={styles.tileCaption}>Esta semana</p>
+            <div className={unirClases(s.indicador, s.indicadorInfo)}>
+              <p className={s.indicadorValor}>{weekReadings.length}</p>
+              <p className={s.indicadorUnidad}>mediciones</p>
+              <p className={s.indicadorNombre}>Esta semana</p>
             </div>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.chartHeader}>
-              <button style={styles.arrowButton} onClick={handlePrevType} aria-label="Tipo anterior">
+          <Tarjeta>
+            <div className={s.graficoEncabezado}>
+              <button type="button" className={s.flecha} onClick={handlePrevType} aria-label="Tipo anterior">
                 ‹
               </button>
-              <p style={styles.cardTitle}>{chartConfig.label}</p>
-              <button style={styles.arrowButton} onClick={handleNextType} aria-label="Tipo siguiente">
+              <p className={s.tarjetaTitulo}>{chartConfig.label}</p>
+              <button type="button" className={s.flecha} onClick={handleNextType} aria-label="Tipo siguiente">
                 ›
               </button>
             </div>
 
             {chartReadings.length === 0 ? (
-              <p style={styles.emptyText}>Aún no hay mediciones de {chartConfig.label.toLowerCase()} esta semana.</p>
+              <p className={s.vacio}>Aún no hay mediciones de {chartConfig.label.toLowerCase()} esta semana.</p>
             ) : (
               <>
-                <svg width="100%" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} style={styles.chart}>
+                <svg width="100%" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className={s.grafico}>
                   {chartFields.map((field, idx) => (
-                    <path key={field.key} d={buildPath(field.key)} fill="none" stroke={fieldColor(idx)} strokeWidth={2} />
+                    <path key={field.key} d={buildPath(field.key)} fill="none" style={{ stroke: fieldColor(idx) }} strokeWidth={2} />
                   ))}
                   {chartByDay.map((r, i) =>
                     r ? (
@@ -240,23 +241,23 @@ export function SummaryPage() {
                             cx={i * stepX}
                             cy={yToPixel(r.value[field.key])}
                             r={3}
-                            fill={fieldColor(idx)}
+                            style={{ fill: fieldColor(idx) }}
                           />
                         ))}
                       </g>
                     ) : null
                   )}
                 </svg>
-                <div style={styles.axisRow}>
+                <div className={s.eje}>
                   {WEEKDAY_LABELS.map((label) => (
-                    <span key={label} style={styles.axisLabel}>{label}</span>
+                    <span key={label}>{label}</span>
                   ))}
                 </div>
                 {chartFields.length > 1 && (
-                  <div style={styles.legendRow}>
+                  <div className={s.leyenda}>
                     {chartFields.map((field, idx) => (
-                      <span key={field.key} style={styles.legendItem}>
-                        <span style={{ ...styles.legendDot, backgroundColor: fieldColor(idx) }} />
+                      <span key={field.key} className={s.leyendaItem}>
+                        <span className={s.leyendaPunto} style={{ background: fieldColor(idx) }} />
                         {field.label}
                       </span>
                     ))}
@@ -264,79 +265,32 @@ export function SummaryPage() {
                 )}
               </>
             )}
-          </div>
+          </Tarjeta>
 
-          <div style={styles.card}>
-            <p style={styles.cardTitle}>Últimas mediciones</p>
+          <Tarjeta>
+            <p className={s.tarjetaTitulo}>Últimas mediciones</p>
             {recentList.length === 0 ? (
-              <p style={styles.emptyText}>Aún no has registrado ninguna medición.</p>
+              <p className={s.vacio}>Aún no has registrado ninguna medición.</p>
             ) : (
               recentList.map((r) => {
                 const badge = statusBadge(r);
                 return (
-                  <div key={r.id} style={styles.listRow}>
-                    <span style={styles.listIcon}>{iconByType[r.type] ?? "•"}</span>
-                    <div style={styles.listInfo}>
-                      <p style={styles.listValue}>{formatValue(r)}</p>
-                      <p style={styles.listTime}>{formatRelativeTime(r.recordedAt)}</p>
+                  <div key={r.id} className={s.fila}>
+                    <span className={s.filaIcono} aria-hidden="true">{iconByType[r.type] ?? "•"}</span>
+                    <div className={s.filaTextos}>
+                      <p className={s.filaValor}>{formatValue(r)}</p>
+                      <p className={s.filaHora}>{formatRelativeTime(r.recordedAt)}</p>
                     </div>
                     {badge && (
-                      <span style={{ ...styles.badge, color: badge.color, backgroundColor: badge.bg }}>
-                        {badge.label}
-                      </span>
+                      <span className={unirClases(s.insignia, CLASE_TONO[badge.tono])}>{badge.label}</span>
                     )}
                   </div>
                 );
               })
             )}
-          </div>
+          </Tarjeta>
         </>
       )}
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", backgroundColor: colors.background, padding: "20px" },
-  header: { display: "flex", alignItems: "center", gap: 12, marginBottom: 20 },
-  backButton: {
-    width: 40, height: 40, borderRadius: "50%", border: `1px solid ${colors.border}`,
-    backgroundColor: colors.background, fontSize: 18, cursor: "pointer",
-  },
-  title: { fontSize: 20, fontWeight: 700, color: colors.textPrimary, margin: 0 },
-  subtitle: { fontSize: 13, color: colors.textSecondary, margin: 0 },
-  loadingText: { color: colors.textSecondary, fontSize: 14 },
-  errorText: { color: colors.emergency, fontSize: 14 },
-  tileGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 },
-  tile: { borderRadius: radius.card, padding: "16px", color: "#FFFFFF" },
-  tileValue: { fontSize: 22, fontWeight: 700, margin: 0 },
-  tileLabel: { fontSize: 12, opacity: 0.85, margin: "2px 0 8px" },
-  tileCaption: { fontSize: 13, fontWeight: 600, margin: 0 },
-  card: {
-    border: `1px solid ${colors.border}`, borderRadius: radius.card, padding: "16px", marginBottom: 16,
-  },
-  chartHeader: {
-    display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12,
-  },
-  arrowButton: {
-    width: 32, height: 32, borderRadius: "50%", border: `1px solid ${colors.border}`,
-    backgroundColor: colors.surfaceMuted, fontSize: 18, cursor: "pointer", lineHeight: 1,
-  },
-  cardTitle: { fontSize: 15, fontWeight: 700, color: colors.textPrimary, margin: 0 },
-  emptyText: { fontSize: 13, color: colors.textSecondary },
-  chart: { display: "block" },
-  axisRow: { display: "flex", justifyContent: "space-between", marginTop: 4 },
-  axisLabel: { fontSize: 11, color: colors.textSecondary },
-  legendRow: { display: "flex", gap: 16, marginTop: 10 },
-  legendItem: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: colors.textSecondary },
-  legendDot: { width: 8, height: 8, borderRadius: "50%", display: "inline-block" },
-  listRow: {
-    display: "flex", alignItems: "center", gap: 12, padding: "10px 0",
-    borderBottom: `1px solid ${colors.border}`,
-  },
-  listIcon: { fontSize: 20 },
-  listInfo: { flex: 1 },
-  listValue: { fontSize: 14, fontWeight: 700, color: colors.textPrimary, margin: 0 },
-  listTime: { fontSize: 12, color: colors.textSecondary, margin: 0 },
-  badge: { fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999 },
-};

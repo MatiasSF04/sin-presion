@@ -1,5 +1,8 @@
-import { useState, type CSSProperties } from "react";
-import { colors, radius } from "../../styles/theme";
+import { useState } from "react";
+import { Boton } from "../base/Boton";
+import { Chip } from "../base/Chip";
+import { Tarjeta } from "../base/Tarjeta";
+import s from "./TaskForm.module.css";
 import { toISODate, validateDefinition, type Recurrence, type TaskCategory, type TaskDefinition } from "../../services/tasks.logic";
 
 interface Props {
@@ -15,6 +18,7 @@ const CATEGORIES: { value: TaskCategory; label: string }[] = [
   { value: "otro", label: "📝 Otro" },
 ];
 const DAYS = ["D", "L", "M", "M", "J", "V", "S"];
+const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const REMIND_OPTIONS = [
   { value: 0, label: "Sin aviso previo" },
   { value: 5, label: "5 min antes" },
@@ -72,58 +76,65 @@ export function TaskForm({ onSubmit, onCancel }: Props) {
     setWeekDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
 
   return (
-    <div style={s.card}>
-      <h2 style={s.h2}>Nueva tarea</h2>
+    <Tarjeta>
+      <h2 className={s.titulo}>Nueva tarea</h2>
 
-      <label style={s.label}>¿Qué hay que hacer?</label>
-      <input style={s.input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: Tomar losartán 50 mg" />
+      <label className={s.etiqueta} htmlFor="tarea-titulo">¿Qué hay que hacer?</label>
+      <input
+        id="tarea-titulo"
+        className={s.campo}
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Ej: Tomar losartán 50 mg"
+      />
 
-      <label style={s.label}>Tipo</label>
-      <div style={s.row}>
+      <p className={s.etiqueta}>Tipo</p>
+      <div className={s.opciones}>
         {CATEGORIES.map((c) => (
-          <button key={c.value} type="button" onClick={() => setCategory(c.value)} style={chip(category === c.value)}>
+          <Chip key={c.value} activo={category === c.value} onClick={() => setCategory(c.value)}>
             {c.label}
-          </button>
+          </Chip>
         ))}
       </div>
 
-      <div style={s.row2}>
-        <div style={{ flex: 1 }}>
-          <label style={s.label}>Hora</label>
-          <input style={s.input} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      <div className={s.columnas}>
+        <div>
+          <label className={s.etiqueta} htmlFor="tarea-hora">Hora</label>
+          <input id="tarea-hora" className={s.campo} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
-        <div style={{ flex: 1 }}>
-          <label style={s.label}>{recKind === "none" ? "Fecha" : "Desde"}</label>
-          <input style={s.input} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        <div>
+          <label className={s.etiqueta} htmlFor="tarea-inicio">{recKind === "none" ? "Fecha" : "Desde"}</label>
+          <input id="tarea-inicio" className={s.campo} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
       </div>
 
-      <label style={s.label}>Repetición</label>
-      <div style={s.row}>
+      <p className={s.etiqueta}>Repetición</p>
+      <div className={s.opciones}>
         {([["none", "No se repite"], ["daily", "Diaria"], ["weekly", "Semanal"], ["custom", "Personalizada"]] as [RecKind, string][]).map(
           ([k, l]) => (
-            <button key={k} type="button" onClick={() => setRecKind(k)} style={chip(recKind === k)}>
+            <Chip key={k} activo={recKind === k} onClick={() => setRecKind(k)}>
               {l}
-            </button>
+            </Chip>
           )
         )}
       </div>
 
       {recKind === "weekly" && (
-        <div style={{ ...s.row, marginTop: 10 }}>
+        <div className={s.opciones}>
           {DAYS.map((d, i) => (
-            <button key={i} type="button" onClick={() => toggleDay(i)} style={dayBtn(weekDays.includes(i))}>
+            <Chip key={i} forma="redondo" activo={weekDays.includes(i)} onClick={() => toggleDay(i)} aria-label={DAY_NAMES[i]}>
               {d}
-            </button>
+            </Chip>
           ))}
         </div>
       )}
       {recKind === "custom" && (
-        <div style={{ ...s.row, marginTop: 10, alignItems: "center" }}>
+        <div className={s.cadaDias}>
           <span>Cada</span>
           <input
-            style={{ ...s.input, width: 70, marginTop: 0 }}
+            className={s.campoCorto}
             type="number" min={2} max={30} value={everyDays}
+            aria-label="Número de días"
             onChange={(e) => setEveryDays(Number(e.target.value))}
           />
           <span>días</span>
@@ -131,56 +142,31 @@ export function TaskForm({ onSubmit, onCancel }: Props) {
       )}
       {recKind !== "none" && (
         <>
-          <label style={s.label}>Hasta (opcional, máx. 60 días)</label>
-          <input style={s.input} type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+          <label className={s.etiqueta} htmlFor="tarea-fin">Hasta (opcional, máx. 60 días)</label>
+          <input id="tarea-fin" className={s.campo} type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
         </>
       )}
 
-      <label style={s.label}>Recordatorio</label>
-      <select style={s.input} value={remind} onChange={(e) => setRemind(Number(e.target.value))}>
+      <label className={s.etiqueta} htmlFor="tarea-aviso">Recordatorio</label>
+      <select id="tarea-aviso" className={s.campo} value={remind} onChange={(e) => setRemind(Number(e.target.value))}>
         {REMIND_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
 
-      <label style={{ ...s.check }}>
+      <label className={s.casilla}>
         <input type="checkbox" checked={notifyMissed} onChange={(e) => setNotifyMissed(e.target.checked)} />
         Avisarme al día siguiente si no la marqué
       </label>
 
-      {error && <p style={s.error}>{error}</p>}
+      {error && <p className={s.error} role="alert">{error}</p>}
 
-      <div style={s.row2}>
-        <button type="button" onClick={onCancel} style={s.secondary} disabled={saving}>Cancelar</button>
-        <button type="button" onClick={handleSubmit} style={s.primary} disabled={saving}>
+      <div className={s.columnas}>
+        <Boton variante="secundario" onClick={onCancel} disabled={saving}>Cancelar</Boton>
+        <Boton variante="primario" onClick={handleSubmit} disabled={saving}>
           {saving ? "Guardando…" : "Guardar"}
-        </button>
+        </Boton>
       </div>
-    </div>
+    </Tarjeta>
   );
 }
-
-const chip = (active: boolean): CSSProperties => ({
-  padding: "10px 14px", borderRadius: radius.chip, fontSize: 15, cursor: "pointer",
-  border: `1.5px solid ${active ? colors.primary : colors.border}`,
-  background: active ? colors.primaryLight : colors.background,
-  color: active ? colors.primary : colors.textPrimary, fontWeight: active ? 600 : 400,
-});
-const dayBtn = (active: boolean): CSSProperties => ({
-  width: 42, height: 42, borderRadius: 21, fontSize: 15, cursor: "pointer",
-  border: `1.5px solid ${active ? colors.primary : colors.border}`,
-  background: active ? colors.primary : colors.background,
-  color: active ? "#fff" : colors.textPrimary, fontWeight: 600,
-});
-const s: Record<string, CSSProperties> = {
-  card: { background: colors.background, border: `1px solid ${colors.border}`, borderRadius: radius.card, padding: 20, marginBottom: 16 },
-  h2: { margin: "0 0 8px", fontSize: 20, color: colors.textPrimary },
-  label: { display: "block", marginTop: 14, fontSize: 14, fontWeight: 600, color: colors.textSecondary },
-  input: { width: "100%", boxSizing: "border-box", marginTop: 6, padding: "12px 14px", fontSize: 16, borderRadius: radius.button, border: `1.5px solid ${colors.border}`, background: colors.background },
-  row: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 },
-  row2: { display: "flex", gap: 12, marginTop: 14 },
-  check: { display: "flex", alignItems: "center", gap: 10, marginTop: 16, fontSize: 15, color: colors.textPrimary },
-  error: { color: colors.emergency, fontSize: 14, marginTop: 12 },
-  primary: { flex: 1, padding: 14, borderRadius: radius.button, border: "none", background: colors.primary, color: "#fff", fontSize: 16, fontWeight: 600, cursor: "pointer" },
-  secondary: { flex: 1, padding: 14, borderRadius: radius.button, border: `1.5px solid ${colors.border}`, background: colors.background, color: colors.textPrimary, fontSize: 16, cursor: "pointer" },
-};

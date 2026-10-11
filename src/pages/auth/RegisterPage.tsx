@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "../../services/firebase";
 import { registerWithEmail, type UserRole } from "../../services/auth.service";
+import { Boton } from "../../components/base/Boton";
+import { unirClases } from "../../estilos/unirClases";
+import s from "./Acceso.module.css";
 
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string })?.code ?? "";
@@ -62,16 +65,14 @@ export function RegisterPage() {
 
   if (done) {
     return (
-      <div style={styles.container}>
-        <div style={styles.avatarCircle}>
-          <span style={styles.avatarIcon}>✉️</span>
-        </div>
-        <h1 style={styles.title}>Revisa tu correo</h1>
-        <p style={styles.subtitle}>
+      <div className={s.pantalla}>
+        <div className={s.avatar} aria-hidden="true">✉️</div>
+        <h1 className={s.titulo}>Revisa tu correo</h1>
+        <p className={s.subtitulo}>
           Enviamos un enlace de verificación a {email}. Después de verificarlo, inicia sesión.
           Si no lo ves, revisa la carpeta de spam.
         </p>
-        <Link to="/login" style={styles.primaryLink}>
+        <Link to="/login" className={s.enlaceBoton}>
           Ir a iniciar sesión
         </Link>
       </div>
@@ -79,27 +80,27 @@ export function RegisterPage() {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.avatarCircle}>
-        <span style={styles.avatarIcon}>👤</span>
-      </div>
+    <div className={s.pantalla}>
+      <div className={s.avatar} aria-hidden="true">👤</div>
 
-      <h1 style={styles.title}>Crear cuenta</h1>
-      <p style={styles.subtitle}>Completa tus datos para comenzar</p>
+      <h1 className={s.titulo}>Crear cuenta</h1>
+      <p className={s.subtitulo}>Completa tus datos para comenzar</p>
 
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.roleRow}>
+      <form onSubmit={handleSubmit} className={s.formulario}>
+        <div className={s.roles} role="group" aria-label="Tipo de cuenta">
           <button
             type="button"
+            aria-pressed={role === "elder"}
             onClick={() => setRole("elder")}
-            style={{ ...styles.roleButton, ...(role === "elder" ? styles.roleActive : {}) }}
+            className={unirClases(s.rol, role === "elder" && s.rolActivo)}
           >
             Adulto mayor
           </button>
           <button
             type="button"
+            aria-pressed={role === "caregiver"}
             onClick={() => setRole("caregiver")}
-            style={{ ...styles.roleButton, ...(role === "caregiver" ? styles.roleActive : {}) }}
+            className={unirClases(s.rol, role === "caregiver" && s.rolActivo)}
           >
             Cuidador
           </button>
@@ -108,132 +109,53 @@ export function RegisterPage() {
         <input
           type="text"
           placeholder="Nombre"
+          aria-label="Nombre"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          style={styles.input}
+          className={s.campo}
           autoComplete="name"
         />
         <input
           type="email"
           placeholder="Correo electrónico"
+          aria-label="Correo electrónico"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
+          className={s.campo}
           autoComplete="email"
         />
         <input
           type="password"
           placeholder="Contraseña (mínimo 6 caracteres)"
+          aria-label="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={styles.input}
+          className={s.campo}
           autoComplete="new-password"
         />
         <input
           type="password"
           placeholder="Repite la contraseña"
+          aria-label="Repite la contraseña"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          style={styles.input}
+          className={s.campo}
           autoComplete="new-password"
         />
 
-        {error && <p style={styles.errorText}>{error}</p>}
+        {error && <p className={s.error} role="alert">{error}</p>}
 
-        <button type="submit" disabled={loading} style={styles.primaryButton}>
+        <Boton type="submit" variante="emergencia" bloque disabled={loading} className={s.botonPrincipal}>
           {loading ? "Creando cuenta..." : "Crear cuenta"}
-        </button>
+        </Boton>
       </form>
 
-      <p style={styles.footerText}>
+      <p className={s.pie}>
         ¿Ya tienes cuenta?{" "}
-        <Link to="/login" style={styles.link}>
+        <Link to="/login" className={s.enlace}>
           Iniciar sesión
         </Link>
       </p>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: "100vh",
-    backgroundColor: "#5B6EF5",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "32px 24px",
-  },
-  avatarCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: "50%",
-    backgroundColor: "rgba(255,255,255,0.25)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 24,
-  },
-  avatarIcon: { fontSize: 40 },
-  title: { color: "#FFFFFF", fontSize: 28, fontWeight: 700, marginBottom: 4, textAlign: "center" },
-  subtitle: {
-    color: "rgba(255,255,255,0.85)",
-    fontSize: 16,
-    marginBottom: 32,
-    textAlign: "center",
-    maxWidth: 340,
-  },
-  form: { width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 16 },
-  roleRow: { display: "flex", gap: 8 },
-  roleButton: {
-    flex: 1,
-    padding: "14px 8px",
-    fontSize: 16,
-    fontWeight: 600,
-    borderRadius: 14,
-    border: "2px solid rgba(255,255,255,0.6)",
-    backgroundColor: "transparent",
-    color: "#FFFFFF",
-    cursor: "pointer",
-  },
-  roleActive: { backgroundColor: "#FFFFFF", color: "#5B6EF5", borderColor: "#FFFFFF" },
-  input: {
-    width: "100%",
-    padding: "16px 18px",
-    fontSize: 18,
-    borderRadius: 14,
-    border: "none",
-    backgroundColor: "#FFFFFF",
-    boxSizing: "border-box",
-  },
-  primaryButton: {
-    width: "100%",
-    padding: "16px",
-    fontSize: 18,
-    fontWeight: 700,
-    borderRadius: 14,
-    border: "none",
-    backgroundColor: "#E53946",
-    color: "#FFFFFF",
-    cursor: "pointer",
-    marginTop: 8,
-  },
-  primaryLink: {
-    display: "block",
-    width: "100%",
-    maxWidth: 340,
-    boxSizing: "border-box",
-    textAlign: "center",
-    padding: "16px",
-    fontSize: 18,
-    fontWeight: 700,
-    borderRadius: 14,
-    backgroundColor: "#E53946",
-    color: "#FFFFFF",
-    textDecoration: "none",
-  },
-  errorText: { color: "#FFE3E3", fontSize: 14, textAlign: "center", margin: 0 },
-  footerText: { color: "rgba(255,255,255,0.85)", fontSize: 15, marginTop: 32 },
-  link: { color: "#FFFFFF", fontWeight: 700, textDecoration: "underline" },
-};

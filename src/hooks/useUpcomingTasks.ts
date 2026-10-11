@@ -3,16 +3,22 @@ import { subscribeTasks } from "../services/tasks.service";
 import { syncReminders } from "../services/reminders.service";
 import { addDays, startOfWeek, toISODate, HORIZON_DAYS, type Task } from "../services/tasks.logic";
 
+/** Resultado de la última respuesta de Firestore, junto con la consulta que la produjo. */
+interface Respuesta {
+  clave: string;
+  tasks: Task[];
+  error: string | null;
+}
+
 /**
  * Una sola suscripción compartida: desde min(ayer, lunes) hasta hoy+HORIZON.
  * Cubre checklist de hoy, adherencia semanal, calendario y avisos "no cumplido" (día anterior).
  * Cada cambio reprograma las notificaciones locales con la misma lista.
+ *
+ * El estado "cargando" no se guarda: se deriva comparando la consulta actual con la de la
+ * última respuesta. Así el efecto solo actualiza estado desde los callbacks de Firestore.
  */
 export function useUpcomingTasks(elderUid: string | undefined) {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const today = toISODate(new Date());
   const from = useMemo(() => {
     const yesterday = addDays(today, -1);
@@ -21,30 +27,29 @@ export function useUpcomingTasks(elderUid: string | undefined) {
   }, [today]);
   const to = useMemo(() => addDays(today, HORIZON_DAYS + 2), [today]);
 
+  const clave = elderUid ? `${elderUid}|${from}|${to}` : null;
+  const [respuesta, setRespuesta] = useState<Respuesta | null>(null);
+
   useEffect(() => {
-    if (!elderUid) {
-      setTasks([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    const unsub = subscribeTasks(
+    if (!elderUid || !clave) return;
+    return subscribeTasks(
       elderUid,
       from,
       to,
       (list) => {
-        setTasks(list);
-        setLoading(false);
-        setError(null);
+        setRespuesta({ clave, tasks: list, error: null });
         syncReminders(list).catch((e) => console.warn("No se pudieron programar recordatorios", e));
       },
-      (e) => {
-        setError(e.message);
-        setLoading(false);
-      }
+      (e) => setRespuesta({ clave, tasks: [], error: e.message })
     );
-    return unsub;
-  }, [elderUid, from, to]);
+  }, [elderUid, from, to, clave]);
 
-  return { tasks, loading, error };
+  if (!clave) return { tasks: [] as Task[], loading: false, error: null };
+
+  const vigente = respuesta?.clave === clave;
+  return {
+    tasks: vigente ? respuesta.tasks : [],
+    loading: !vigente,
+    error: vigente ? respuesta.error : null,
+  };
 }

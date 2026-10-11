@@ -1,0 +1,34 @@
+.pagina {
+  min-height: 100svh;
+  padding: var(--espacio-5);
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espacio-4);
+}
+
+.otros {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-2);
+  min-height: 120px;
+  padding: var(--espacio-5) var(--espacio-3);
+  border-radius: var(--radio-tarjeta);
+  border: 2px dashed var(--color-borde);
+  background: var(--color-superficie);
+}
+
+.otrosIcono {
+  font-size: var(--texto-2xl);
+  color: var(--color-texto-secundario);
+}
+
+.otrosEtiqueta {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-fuerte);
+  color: var(--color-texto-secundario);
+}

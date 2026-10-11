@@ -1,0 +1,150 @@
+.pagina {
+  min-height: 100svh;
+  padding: var(--espacio-5);
+}
+
+.mensaje {
+  color: var(--color-texto-secundario);
+}
+
+.error {
+  color: var(--color-emergencia);
+}
+
+/* ---------- Indicadores ---------- */
+.indicadores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-5);
+}
+
+.indicador {
+  padding: var(--espacio-4);
+  border-radius: var(--radio-tarjeta);
+  color: var(--color-sobre-color);
+}
+
+.indicadorPrimario { background: var(--color-primario); }
+.indicadorEmergencia { background: var(--color-emergencia); }
+.indicadorExito { background: var(--color-exito); }
+.indicadorInfo { background: var(--color-info); }
+
+.indicadorValor {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-fuerte);
+}
+
+.indicadorUnidad {
+  margin: 2px 0 var(--espacio-2);
+  font-size: var(--texto-xs);
+  color: var(--color-sobre-color-suave);
+}
+
+.indicadorNombre {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+}
+
+/* ---------- Gráfico ---------- */
+.graficoEncabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--espacio-3);
+}
+
+.flecha {
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border-radius: 50%;
+  border: 1px solid var(--color-borde);
+  background: var(--color-superficie);
+  font-size: var(--texto-lg);
+  line-height: 1;
+}
+
+.tarjetaTitulo {
+  font-size: var(--texto-base);
+  font-weight: var(--peso-fuerte);
+}
+
+.vacio {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.grafico {
+  display: block;
+  overflow: visible;
+}
+
+.eje {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--espacio-1);
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.leyenda {
+  display: flex;
+  gap: var(--espacio-4);
+  margin-top: var(--espacio-3);
+}
+
+.leyendaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.leyendaPunto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* ---------- Últimas mediciones ---------- */
+.fila {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-3) 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.fila:last-child {
+  border-bottom: none;
+}
+
+.filaIcono {
+  font-size: var(--texto-lg);
+}
+
+.filaTextos {
+  flex: 1;
+}
+
+.filaValor {
+  font-size: var(--texto-base);
+  font-weight: var(--peso-fuerte);
+}
+
+.filaHora {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.insignia {
+  padding: var(--espacio-1) var(--espacio-3);
+  border-radius: var(--radio-completo);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-fuerte);
+}
+
+.insigniaExito { color: var(--color-exito); background: var(--color-exito-suave); }
+.insigniaInfo { color: var(--color-info); background: var(--color-info-suave); }
+.insigniaEmergencia { color: var(--color-emergencia); background: var(--color-emergencia-suave); }

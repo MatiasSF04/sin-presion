@@ -1,0 +1,43 @@
+.encabezado {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-5);
+}
+
+.volver {
+  flex-shrink: 0;
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border-radius: 50%;
+  border: 1.5px solid var(--color-borde);
+  background: var(--color-fondo);
+  font-size: var(--texto-lg);
+}
+
+.icono {
+  flex-shrink: 0;
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--texto-lg);
+  /* El color de fondo lo define quien usa el encabezado mediante --color-icono. */
+  background: var(--color-icono, var(--color-superficie));
+}
+
+.textos {
+  min-width: 0;
+}
+
+.titulo {
+  font-size: var(--texto-xl);
+  font-weight: var(--peso-fuerte);
+}
+
+.subtitulo {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
