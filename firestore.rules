@@ -2,10 +2,77 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // comentar para pruebas
-      // allow read, write: if false;
-      allow read, write: if request.auth != null;
+
+    // ---------- utilidades ----------
+    function autenticado() { return request.auth != null; }
+    function esYo(uid) { return autenticado() && request.auth.uid == uid; }
+    function rolActual() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    // vínculo con id determinístico: <elderUid>_<cuidadorUid>
+    function esCuidadorDe(elderUid) {
+      return autenticado() &&
+        exists(/databases/$(database)/documents/vinculos/$(elderUid + '_' + request.auth.uid));
+    }
+    function puedeVer(elderUid) { return esYo(elderUid) || esCuidadorDe(elderUid); }
+
+    // ---------- perfiles ----------
+    match /users/{uid} {
+      // el propio usuario, su cuidador, o el adulto mayor que lo tiene como cuidador
+      allow read: if esYo(uid) || esCuidadorDe(uid) ||
+        (autenticado() && exists(/databases/$(database)/documents/vinculos/$(request.auth.uid + '_' + uid)));
+      allow create: if esYo(uid) && request.resource.data.role in ['elder', 'caregiver'];
+      allow update: if esYo(uid) && request.resource.data.role == resource.data.role; // el rol no cambia
+      allow delete: if false;
+    }
+
+    // ---------- signos vitales ----------
+    match /vitalReadings/{id} {
+      allow read: if puedeVer(resource.data.elderUid);
+      allow create: if esYo(request.resource.data.elderUid);   // solo el adulto mayor registra
+      allow update, delete: if false;                          // historial inmutable
+    }
+
+    // ---------- tareas ----------
+    match /tasks/{id} {
+      allow read: if puedeVer(resource.data.elderUid);
+      allow create: if puedeVer(request.resource.data.elderUid);
+
+      // adulto mayor: control total sobre lo suyo
+      allow update: if esYo(resource.data.elderUid)
+        && request.resource.data.elderUid == resource.data.elderUid;
+      // cuidador: solo tareas pendientes y sin tocar el estado (protege la adherencia)
+      allow update: if esCuidadorDe(resource.data.elderUid)
+        && resource.data.status == 'pending'
+        && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['status', 'completedAt', 'elderUid']);
+
+      allow delete: if esYo(resource.data.elderUid)
+        || (esCuidadorDe(resource.data.elderUid) && resource.data.status == 'pending');
+    }
+
+    // ---------- vinculación ----------
+    // el id del documento es el código de 6 dígitos
+    match /codigosVinculo/{codigo} {
+      allow create: if esYo(request.resource.data.elderUid) && rolActual() == 'elder'
+        && request.resource.data.expiraEn > request.time;
+      allow get: if autenticado();     // el cuidador lo consulta por código exacto
+      allow list, update: if false;    // no se pueden listar ni reutilizar
+      // lo borra el adulto mayor, o el cuidador en el mismo batch en que crea el vínculo
+      allow delete: if esYo(resource.data.elderUid) || (autenticado() &&
+        existsAfter(/databases/$(database)/documents/vinculos/$(resource.data.elderUid + '_' + request.auth.uid)));
+    }
+
+    match /vinculos/{vinculoId} {
+      allow read: if esYo(resource.data.elderUid) || esYo(resource.data.cuidadorUid);
+      allow create: if esYo(request.resource.data.cuidadorUid) && rolActual() == 'caregiver'
+        && vinculoId == request.resource.data.elderUid + '_' + request.auth.uid
+        && get(/databases/$(database)/documents/codigosVinculo/$(request.resource.data.codigo)).data.elderUid
+             == request.resource.data.elderUid
+        && get(/databases/$(database)/documents/codigosVinculo/$(request.resource.data.codigo)).data.expiraEn
+             > request.time;
+      allow update: if false;
+      allow delete: if esYo(resource.data.elderUid) || esYo(resource.data.cuidadorUid); // cualquiera puede desvincular
     }
   }
 }
