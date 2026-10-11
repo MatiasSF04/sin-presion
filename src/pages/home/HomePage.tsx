@@ -1,9 +1,10 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
+import { ReminderBanner } from "../../components/shared/ReminderBanner";
+import { computeDayProgress, toISODate } from "../../services/tasks.logic";
 import { colors, radius } from "../../styles/theme";
-
-// TODO: reemplazar por datos reales cuando tasks.service.ts esté implementado
-const MOCK_TASKS_DONE = 2;
-const MOCK_TASKS_TOTAL = 10;
 
 interface HomeCard {
   key: string;
@@ -15,6 +16,19 @@ interface HomeCard {
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { appUser } = useAuth();
+  const { tasks } = useUpcomingTasks(appUser?.uid);
+  const [now, setNow] = useState(new Date());
+
+  // refresca el banner y el progreso cada minuto
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const today = toISODate(now);
+  const todays = tasks.filter((t) => t.dueDate === today);
+  const progress = computeDayProgress(tasks, today);
 
   function handleEmergency() {
     // TODO: reemplazar el número fijo por el contacto de emergencia guardado en el perfil
@@ -60,8 +74,6 @@ export function HomePage() {
     },
   ];
 
-  const progressPct = Math.round((MOCK_TASKS_DONE / MOCK_TASKS_TOTAL) * 100);
-
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -82,11 +94,15 @@ export function HomePage() {
       </div>
 
       <div style={styles.content}>
+        <ReminderBanner tasks={todays} now={now} onGo={() => navigate("/tasks")} />
+
         <div style={styles.progressTrack}>
-          <div style={{ ...styles.progressFill, width: `${progressPct}%` }} />
+          <div style={{ ...styles.progressFill, width: `${progress.pct}%` }} />
         </div>
         <p style={styles.progressLabel}>
-          {MOCK_TASKS_DONE}/{MOCK_TASKS_TOTAL} TAREAS COMPLETAS
+          {progress.total === 0
+            ? "SIN TAREAS PARA HOY"
+            : `${progress.done}/${progress.total} TAREAS COMPLETAS`}
         </p>
 
         <div style={styles.list}>

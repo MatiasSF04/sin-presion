@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
+import { computeWeeklyAdherence } from "../../services/tasks.logic";
 import {
   getRecentVitalReadings,
   type StoredVitalReading,
   VITAL_TYPES,
 } from "../../services/vitals.service";
 import { colors, radius } from "../../styles/theme";
-
-// TODO: reemplazar por el % real de cumplimiento del checklist cuando tasks.service.ts esté listo
-const MOCK_ADHERENCIA_PCT = 95;
 
 const WEEKDAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -87,6 +86,7 @@ const CHART_HEIGHT = 140;
 export function SummaryPage() {
   const navigate = useNavigate();
   const { appUser } = useAuth();
+  const { tasks } = useUpcomingTasks(appUser?.uid);
   const [readings, setReadings] = useState<StoredVitalReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +107,7 @@ export function SummaryPage() {
   const presionReadings = readings.filter((r) => r.type === "presion");
   const now = new Date();
   const weekReadings = readings.filter((r) => isSameWeek(r.recordedAt, now));
+  const adherence = computeWeeklyAdherence(tasks, now);
 
   const avgSistolica = presionReadings.length
     ? Math.round(presionReadings.reduce((sum, r) => sum + r.value.sistolica, 0) / presionReadings.length)
@@ -200,8 +201,8 @@ export function SummaryPage() {
               <p style={styles.tileCaption}>Pulso medio</p>
             </div>
             <div style={{ ...styles.tile, backgroundColor: colors.success }}>
-              <p style={styles.tileValue}>{MOCK_ADHERENCIA_PCT}%</p>
-              <p style={styles.tileLabel}>medicación</p>
+              <p style={styles.tileValue}>{adherence.total === 0 ? "—" : `${adherence.pct}%`}</p>
+              <p style={styles.tileLabel}>tareas (semana)</p>
               <p style={styles.tileCaption}>Adherencia</p>
             </div>
             <div style={{ ...styles.tile, backgroundColor: colors.info }}>
