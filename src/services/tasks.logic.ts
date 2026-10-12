@@ -306,3 +306,17 @@ export function tieneOcurrenciasSiguientes(
     (t) => t.seriesId === tarea.seriesId && t.dueDate > tarea.dueDate && esModificable(t)
   );
 }
+
+/** Tareas de un día separadas para la vista del cuidador: pendientes (accionables) y completadas (solo lectura). */
+export function agruparTareasDelDia(
+  tareas: Task[],
+  diaISO: string
+): { pendientes: Task[]; completadas: Task[] } {
+  const delDia = tareas
+    .filter((t) => t.dueDate === diaISO)
+    .sort((a, b) => a.time.localeCompare(b.time));
+  return {
+    pendientes: delDia.filter((t) => t.status === "pending"),
+    completadas: delDia.filter((t) => t.status === "done"),
+  };
+}

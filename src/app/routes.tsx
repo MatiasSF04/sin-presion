@@ -16,6 +16,7 @@ import { SettingsPage } from "../pages/settings/SettingsPage";
 
 import { CaregiverHomePage } from "../pages/caregiver/CaregiverHomePage";
 import { CaregiverAlertsPage } from "../pages/caregiver/CaregiverAlertsPage";
+import { TareasCuidadorPage } from "../pages/caregiver/TareasCuidadorPage";
 
 // [TEMPORAL] - CAMBIAR esto en false antes de la entrega o el pilotaje.
 // Mientras esté en true, se salta todo el flujo de login/PIN y entra directo a Home.
@@ -77,6 +78,7 @@ export function AppRoutes() {
       <Routes>
         <Route path="/caregiver" element={<CaregiverHomePage />} />
         <Route path="/caregiver/alerts" element={<CaregiverAlertsPage />} />
+        <Route path="/caregiver/tasks" element={<TareasCuidadorPage />} />
         <Route path="/link" element={<LinkCaregiverPage />} />
         <Route path="*" element={<Navigate to="/caregiver" replace />} />
       </Routes>

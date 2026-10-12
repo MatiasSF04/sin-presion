@@ -1,0 +1,102 @@
+.pagina {
+  min-height: 100svh;
+  padding: var(--espacio-5) var(--espacio-5) 100px;
+}
+
+.resumenFila {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--texto-base);
+}
+
+.barra {
+  margin-top: var(--espacio-3);
+}
+
+.seccion {
+  margin: var(--espacio-5) 0 var(--espacio-3);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-fuerte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+
+.mensaje {
+  margin-bottom: var(--espacio-4);
+  color: var(--color-texto-secundario);
+}
+
+.error {
+  margin-bottom: var(--espacio-4);
+  color: var(--color-emergencia);
+}
+
+.tarea {
+  margin-bottom: var(--espacio-3);
+  padding: var(--espacio-4);
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-fondo);
+}
+
+.tareaVencida {
+  border: 2px solid var(--color-emergencia);
+}
+
+.tareaHecha {
+  background: var(--color-superficie);
+  border-color: transparent;
+}
+
+.tareaFila {
+  display: flex;
+  gap: var(--espacio-3);
+}
+
+.hora {
+  flex-shrink: 0;
+  width: 52px;
+  font-weight: var(--peso-fuerte);
+  font-variant-numeric: tabular-nums;
+}
+
+.textos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.titulo {
+  font-weight: var(--peso-medio);
+}
+
+.nota,
+.estadoHecha {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.estadoHecha {
+  color: var(--color-exito);
+}
+
+.estadoVencida {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-fuerte);
+  color: var(--color-emergencia);
+}
+
+.acciones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-3);
+}
+
+/* Acción destructiva secundaria: borde y texto de alerta. */
+.quitar {
+  border-color: var(--color-emergencia);
+  color: var(--color-emergencia);
+  font-weight: var(--peso-fuerte);
+}

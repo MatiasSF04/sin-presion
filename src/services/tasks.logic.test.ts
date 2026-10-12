@@ -12,6 +12,7 @@ import {
   esModificable,
   estaVigente,
   tieneOcurrenciasSiguientes,
+  agruparTareasDelDia,
   ocurrenciasModificablesDesde,
   validarCambios,
   type Task,
@@ -205,5 +206,21 @@ describe("opción 'hoy y los días siguientes'", () => {
     expect(tieneOcurrenciasSiguientes([hoy], hoy)).toBe(false); // tarea única
     expect(tieneOcurrenciasSiguientes([hoy, task({ id: "o", seriesId: "s2", dueDate: "2026-10-13" })], hoy)).toBe(false); // otra serie
     expect(tieneOcurrenciasSiguientes([hoy, task({ id: "m", seriesId: "s1", dueDate: "2026-10-13", status: "done" })], hoy)).toBe(false);
+  });
+});
+
+describe("vista del día para el cuidador", () => {
+  it("separa pendientes y completadas del día, ordenadas por hora, sin mezclar otros días", () => {
+    const r = agruparTareasDelDia(
+      [
+        task({ id: "tarde", dueDate: "2026-10-12", time: "18:00" }),
+        task({ id: "hecha", dueDate: "2026-10-12", time: "08:00", status: "done" }),
+        task({ id: "manana", dueDate: "2026-10-12", time: "09:00" }),
+        task({ id: "otroDia", dueDate: "2026-10-13", time: "07:00" }),
+      ],
+      "2026-10-12"
+    );
+    expect(r.pendientes.map((t) => t.id)).toEqual(["manana", "tarde"]);
+    expect(r.completadas.map((t) => t.id)).toEqual(["hecha"]);
   });
 });

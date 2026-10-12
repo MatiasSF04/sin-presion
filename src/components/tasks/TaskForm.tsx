@@ -4,28 +4,15 @@ import { Chip } from "../base/Chip";
 import { Tarjeta } from "../base/Tarjeta";
 import s from "./TaskForm.module.css";
 import { toISODate, validateDefinition, type Recurrence, type TaskCategory, type TaskDefinition } from "../../services/tasks.logic";
+import { CATEGORIAS, OPCIONES_RECORDATORIO } from "./opcionesTarea";
 
 interface Props {
   onSubmit: (def: TaskDefinition) => Promise<void>;
   onCancel: () => void;
 }
 
-const CATEGORIES: { value: TaskCategory; label: string }[] = [
-  { value: "medicamento", label: "💊 Medicamento" },
-  { value: "cita", label: "🩺 Cita" },
-  { value: "ejercicio", label: "🚶 Ejercicio" },
-  { value: "medicion", label: "❤️ Medición" },
-  { value: "otro", label: "📝 Otro" },
-];
 const DAYS = ["D", "L", "M", "M", "J", "V", "S"];
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-const REMIND_OPTIONS = [
-  { value: 0, label: "Sin aviso previo" },
-  { value: 5, label: "5 min antes" },
-  { value: 15, label: "15 min antes" },
-  { value: 30, label: "30 min antes" },
-  { value: 60, label: "1 hora antes" },
-];
 
 type RecKind = Recurrence["kind"];
 
@@ -90,7 +77,7 @@ export function TaskForm({ onSubmit, onCancel }: Props) {
 
       <p className={s.etiqueta}>Tipo</p>
       <div className={s.opciones}>
-        {CATEGORIES.map((c) => (
+        {CATEGORIAS.map((c) => (
           <Chip key={c.value} activo={category === c.value} onClick={() => setCategory(c.value)}>
             {c.label}
           </Chip>
@@ -149,7 +136,7 @@ export function TaskForm({ onSubmit, onCancel }: Props) {
 
       <label className={s.etiqueta} htmlFor="tarea-aviso">Recordatorio</label>
       <select id="tarea-aviso" className={s.campo} value={remind} onChange={(e) => setRemind(Number(e.target.value))}>
-        {REMIND_OPTIONS.map((o) => (
+        {OPCIONES_RECORDATORIO.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
