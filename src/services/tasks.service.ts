@@ -4,12 +4,25 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import {
-  generateOccurrenceDates, validateDefinition, validarCambios, ocurrenciasModificablesDesde,
-  esModificable, estaVigente, addDays,
-  type CambiosTarea, type CreadoPor, type Task, type TaskDefinition,
+  generarOcurrencias, validateDefinition, validarCambios, ocurrenciasModificablesDesde,
+  esModificable, estaVigente, estaAtrasada, addDays,
+  type CambiosTarea, type CreadoPor, type Momento, type Task, type TaskDefinition,
 } from "./tasks.logic";
 
 const COL = "tasks";
+/** Firestore acepta hasta 500 escrituras por lote; se deja margen. */
+export const TAMANO_LOTE = 450;
+
+const MSJ_ATRASADA = "Las tareas atrasadas no se pueden quitar: quedan registradas como no cumplidas";
+
+/** Escribe en lotes de TAMANO_LOTE. Un tratamiento cada 4 h por 60 días son 360 documentos. */
+async function escribirEnLotes<T>(items: T[], escribir: (batch: ReturnType<typeof writeBatch>, item: T) => void) {
+  for (let i = 0; i < items.length; i += TAMANO_LOTE) {
+    const batch = writeBatch(db);
+    items.slice(i, i + TAMANO_LOTE).forEach((item) => escribir(batch, item));
+    await batch.commit();
+  }
+}
 
 /** Error con mensaje listo para mostrar al usuario. */
 export class ErrorTarea extends Error {}
@@ -28,10 +41,10 @@ export async function createTaskSeries(
   if (err) throw new Error(err);
 
   const seriesId = doc(collection(db, COL)).id; // id aleatorio sin escribir
-  const dates = generateOccurrenceDates(def);
-  const batch = writeBatch(db);
+  const ocurrencias = generarOcurrencias(def);
+  const frecuenciaHoras = def.recurrence.kind === "hours" ? def.recurrence.everyHours : undefined;
 
-  for (const dueDate of dates) {
+  await escribirEnLotes(ocurrencias, (batch, { dueDate, time }) => {
     const ref = doc(collection(db, COL));
     batch.set(ref, {
       elderUid,
@@ -40,16 +53,16 @@ export async function createTaskSeries(
       notes: def.notes?.trim() ?? "",
       category: def.category,
       dueDate,
-      time: def.time,
+      time,
       remindBeforeMin: def.remindBeforeMin,
       notifyMissed: def.notifyMissed,
       status: "pending",
       createdAt: Timestamp.now(),
       ...(creadoPor ? { creadoPor } : {}),
+      ...(frecuenciaHoras ? { frecuenciaHoras } : {}),
     });
-  }
-  await batch.commit();
-  return dates.length;
+  });
+  return ocurrencias.length;
 }
 
 /**
@@ -93,6 +106,7 @@ export function subscribeTasks(
             status: x.status === "done" ? "done" : "pending",
             completedAt: x.completedAt ? (x.completedAt as Timestamp).toDate() : undefined,
             creadoPor: x.creadoPor ?? undefined,
+            frecuenciaHoras: x.frecuenciaHoras ?? undefined,
           };
         });
       tasks.sort((a, b) => (a.dueDate + a.time).localeCompare(b.dueDate + b.time));
@@ -109,13 +123,16 @@ export async function setTaskDone(taskId: string, done: boolean): Promise<void> 
   });
 }
 
-function camposDeCambios(c: CambiosTarea) {
-  // nunca incluye status, completedAt ni elderUid: así el cuidador no choca con las reglas
+/**
+ * Campos a escribir al editar. Nunca incluye status, completedAt ni elderUid (así el cuidador
+ * no choca con las reglas). En tratamientos por horas tampoco la hora: cada dosis tiene la suya.
+ */
+function camposDeCambios(c: CambiosTarea, porHoras: boolean) {
   return {
     title: c.title.trim(),
     notes: c.notes?.trim() ?? "",
     category: c.category,
-    time: c.time,
+    ...(porHoras ? {} : { time: c.time }),
     remindBeforeMin: c.remindBeforeMin,
     notifyMissed: c.notifyMissed,
   };
@@ -126,14 +143,15 @@ async function ocurrenciaModificable(taskId: string) {
   const ref = doc(db, COL, taskId);
   const snap = await getDoc(ref);
   if (!snap.exists() || !estaVigente(snap.data())) throw new ErrorTarea("La tarea ya no existe");
-  if (!esModificable({ status: snap.data().status })) {
+  const x = snap.data();
+  if (!esModificable({ status: x.status })) {
     throw new ErrorTarea("Las tareas completadas no se pueden modificar");
   }
-  return ref;
+  return { ref, dueDate: x.dueDate as string, time: x.time as string, porHoras: (x.frecuenciaHoras ?? 0) > 0 };
 }
 
-/** Pendientes y vigentes de la serie desde una fecha. */
-async function serieModificableDesde(elderUid: string, seriesId: string, fromISO: string) {
+/** Pendientes y vigentes de la serie desde un momento (fecha + hora). */
+async function serieModificableDesde(elderUid: string, seriesId: string, desde: Momento) {
   const snap = await getDocs(
     query(collection(db, COL), where("elderUid", "==", elderUid), where("seriesId", "==", seriesId))
   );
@@ -141,10 +159,12 @@ async function serieModificableDesde(elderUid: string, seriesId: string, fromISO
     snap.docs.map((d) => ({
       ref: d.ref,
       dueDate: d.data().dueDate as string,
+      time: d.data().time as string,
       status: d.data().status as Task["status"],
       eliminada: d.data().eliminada as boolean | undefined,
+      porHoras: (d.data().frecuenciaHoras ?? 0) > 0,
     })),
-    fromISO
+    desde
   );
 }
 
@@ -152,23 +172,21 @@ async function serieModificableDesde(elderUid: string, seriesId: string, fromISO
 export async function updateTask(taskId: string, cambios: CambiosTarea): Promise<void> {
   const err = validarCambios(cambios);
   if (err) throw new ErrorTarea(err);
-  await updateDoc(await ocurrenciaModificable(taskId), camposDeCambios(cambios));
+  const o = await ocurrenciaModificable(taskId);
+  await updateDoc(o.ref, camposDeCambios(cambios, o.porHoras));
 }
 
 /** Edita esta ocurrencia y las siguientes de la serie, solo las pendientes. Devuelve cuántas cambió. */
 export async function updateSeriesFrom(
   elderUid: string,
   seriesId: string,
-  fromISO: string,
+  desde: Momento,
   cambios: CambiosTarea
 ): Promise<number> {
   const err = validarCambios(cambios);
   if (err) throw new ErrorTarea(err);
-  const objetivo = await serieModificableDesde(elderUid, seriesId, fromISO);
-  const batch = writeBatch(db);
-  const campos = camposDeCambios(cambios);
-  objetivo.forEach((o) => batch.update(o.ref, campos));
-  await batch.commit();
+  const objetivo = await serieModificableDesde(elderUid, seriesId, desde);
+  await escribirEnLotes(objetivo, (batch, o) => batch.update(o.ref, camposDeCambios(cambios, o.porHoras)));
   return objetivo.length;
 }
 
@@ -178,40 +196,42 @@ function marcaQuitada(por: CreadoPor) {
 
 /**
  * Quita una ocurrencia (soft delete): el documento se conserva marcado como eliminado.
+ * No se puede quitar una atrasada sin marcar: queda como no cumplida (OE2).
  * Devuelve los ids afectados, para poder deshacer.
  */
-export async function quitarTarea(taskId: string, por: CreadoPor): Promise<string[]> {
-  const ref = await ocurrenciaModificable(taskId);
-  await updateDoc(ref, marcaQuitada(por));
-  return [ref.id];
+export async function quitarTarea(taskId: string, por: CreadoPor, ahora = new Date()): Promise<string[]> {
+  const o = await ocurrenciaModificable(taskId);
+  if (estaAtrasada({ status: "pending", dueDate: o.dueDate, time: o.time }, ahora)) {
+    throw new ErrorTarea(MSJ_ATRASADA);
+  }
+  await updateDoc(o.ref, marcaQuitada(por));
+  return [o.ref.id];
 }
 
 /**
- * Quita esta ocurrencia y las siguientes de la serie (soft delete). Las completadas se
- * conservan intactas: son historial de adherencia. Devuelve los ids afectados.
+ * Quita esta ocurrencia y las siguientes de la serie (soft delete). Las completadas y las
+ * atrasadas sin marcar se conservan intactas: son historial de adherencia. Devuelve los ids afectados.
  */
 export async function quitarSerieDesde(
   elderUid: string,
   seriesId: string,
-  fromISO: string,
-  por: CreadoPor
+  desde: Momento,
+  por: CreadoPor,
+  ahora = new Date()
 ): Promise<string[]> {
-  const objetivo = await serieModificableDesde(elderUid, seriesId, fromISO);
-  const batch = writeBatch(db);
+  const objetivo = (await serieModificableDesde(elderUid, seriesId, desde)).filter((o) => !estaAtrasada(o, ahora));
+  if (objetivo.length === 0) throw new ErrorTarea(MSJ_ATRASADA);
   const marca = marcaQuitada(por);
-  objetivo.forEach((o) => batch.update(o.ref, marca));
-  await batch.commit();
+  await escribirEnLotes(objetivo, (batch, o) => batch.update(o.ref, marca));
   return objetivo.map((o) => o.ref.id);
 }
 
 /** Deshacer: vuelve a dejar vigentes las tareas quitadas. */
 export async function restaurarTareas(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const batch = writeBatch(db);
-  ids.forEach((id) =>
+  await escribirEnLotes(ids, (batch, id) =>
     batch.update(doc(db, COL, id), { eliminada: false, eliminadaEn: null, eliminadaPor: null })
   );
-  await batch.commit();
 }
 
 export { addDays };

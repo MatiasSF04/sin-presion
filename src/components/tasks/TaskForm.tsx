@@ -14,7 +14,7 @@ interface Props {
 const DAYS = ["D", "L", "M", "M", "J", "V", "S"];
 const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-type RecKind = Recurrence["kind"];
+type RecKind = Exclude<Recurrence["kind"], "hours">; // "cada N horas" llega en 5b
 
 export function TaskForm({ onSubmit, onCancel }: Props) {
   const [title, setTitle] = useState("");

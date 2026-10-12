@@ -72,7 +72,7 @@ export function TasksPage() {
       const ids =
         modo === "hoy"
           ? await quitarTarea(t.id, por)
-          : await quitarSerieDesde(elderUid, t.seriesId, t.dueDate, por);
+          : await quitarSerieDesde(elderUid, t.seriesId, t, por);
       setAviso({
         mensaje: modo === "hoy" ? `Quitaste «${t.title}» de hoy.` : `Quitaste «${t.title}» desde hoy en adelante.`,
         ids,

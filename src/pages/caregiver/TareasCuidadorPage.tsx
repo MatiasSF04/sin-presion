@@ -68,7 +68,7 @@ export function TareasCuidadorPage() {
 
   async function guardarEdicion(cambios: CambiosTarea, alcance: AlcanceEdicion) {
     if (!elderUid || !editando) return;
-    if (alcance === "siguientes") await updateSeriesFrom(elderUid, editando.seriesId, editando.dueDate, cambios);
+    if (alcance === "siguientes") await updateSeriesFrom(elderUid, editando.seriesId, editando, cambios);
     else await updateTask(editando.id, cambios);
     setEditando(null);
   }
@@ -82,7 +82,7 @@ export function TareasCuidadorPage() {
       const ids =
         modo === "hoy"
           ? await quitarTarea(t.id, yo)
-          : await quitarSerieDesde(elderUid, t.seriesId, t.dueDate, yo);
+          : await quitarSerieDesde(elderUid, t.seriesId, t, yo);
       setAviso({
         mensaje: modo === "hoy" ? `Quitaste «${t.title}» de hoy.` : `Quitaste «${t.title}» desde hoy en adelante.`,
         ids,

@@ -7,7 +7,8 @@ export type Recurrence =
   | { kind: "none" }
   | { kind: "daily" }
   | { kind: "weekly"; days: number[] } // 0 = domingo … 6 = sábado
-  | { kind: "custom"; everyDays: number }; // cada N días (N >= 2)
+  | { kind: "custom"; everyDays: number } // cada N días (N >= 2)
+  | { kind: "hours"; everyHours: number }; // tratamiento cada N horas (ej. paracetamol cada 8 h)
 
 /** Lo que completa el usuario en el formulario (la "serie"). */
 export interface TaskDefinition {
@@ -17,6 +18,8 @@ export interface TaskDefinition {
   time: string; // "HH:mm"
   startDate: string; // "YYYY-MM-DD"
   endDate?: string; // inclusive; si falta se usa el horizonte por defecto
+  /** Hora de término "HH:mm". Obligatoria (junto con endDate) en tratamientos por horas. */
+  endTime?: string;
   recurrence: Recurrence;
   /** Minutos antes de la hora para avisar. 0 = sin aviso previo. */
   remindBeforeMin: number;
@@ -42,6 +45,14 @@ export interface Task {
   creadoPor?: CreadoPor;
   /** Soft delete: la tarea se quitó pero el documento se conserva como historial. */
   eliminada?: boolean;
+  /** Solo en tratamientos por horas: cada cuántas horas se repite. Su hora no se edita. */
+  frecuenciaHoras?: number;
+}
+
+/** Momento de una ocurrencia: fecha + hora. Ordena y compara dosis del mismo día. */
+export interface Momento {
+  dueDate: string;
+  time: string;
 }
 
 export interface CreadoPor {
@@ -94,7 +105,10 @@ export function dueDateTime(dueDate: string, time: string): Date {
 
 // ---------- repetición ----------
 
-/** Fechas en que ocurre la serie, desde startDate hasta min(endDate, startDate+HORIZON). */
+/**
+ * Fechas en que ocurre la serie, desde startDate hasta min(endDate, startDate+HORIZON).
+ * Los tratamientos por horas no pasan por aquí: usan generarOcurrencias.
+ */
 export function generateOccurrenceDates(def: TaskDefinition, horizonDays = HORIZON_DAYS): string[] {
   const { startDate, recurrence } = def;
   if (recurrence.kind === "none") return [startDate];
@@ -110,12 +124,41 @@ export function generateOccurrenceDates(def: TaskDefinition, horizonDays = HORIZ
       out.push(date);
     } else if (recurrence.kind === "weekly") {
       if (recurrence.days.includes(parseISODate(date).getDay())) out.push(date);
-    } else {
+    } else if (recurrence.kind === "custom") {
       const every = Math.max(2, Math.floor(recurrence.everyDays));
       if (i % every === 0) out.push(date);
     }
   }
   return out;
+}
+
+export const MAX_FRECUENCIA_HORAS = 24;
+
+/**
+ * Ocurrencias (fecha + hora) de la serie. Para días usa la hora fija de la definición.
+ * Para tratamientos por horas suma N horas reales desde la primera dosis hasta la fecha y
+ * hora de término, sin pasar del horizonte (60 días desde la primera dosis).
+ */
+export function generarOcurrencias(def: TaskDefinition, horizonDays = HORIZON_DAYS): Momento[] {
+  const { recurrence } = def;
+  if (recurrence.kind !== "hours") {
+    return generateOccurrenceDates(def, horizonDays).map((dueDate) => ({ dueDate, time: def.time }));
+  }
+  const inicio = dueDateTime(def.startDate, def.time).getTime();
+  const tope = inicio + horizonDays * 86_400_000;
+  const termino = def.endDate && def.endTime ? dueDateTime(def.endDate, def.endTime).getTime() : tope;
+  const fin = Math.min(termino, tope - 1);
+  const paso = Math.floor(recurrence.everyHours) * 3_600_000;
+  const out: Momento[] = [];
+  for (let t = inicio; t <= fin; t += paso) {
+    const d = new Date(t);
+    out.push({ dueDate: toISODate(d), time: horaDe(d) });
+  }
+  return out;
+}
+
+function horaDe(d: Date): string {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 export function validateDefinition(def: TaskDefinition): string | null {
@@ -125,6 +168,14 @@ export function validateDefinition(def: TaskDefinition): string | null {
   if (def.endDate && def.endDate < def.startDate) return "La fecha final no puede ser anterior al inicio";
   if (def.recurrence.kind === "weekly" && def.recurrence.days.length === 0) return "Elige al menos un día de la semana";
   if (def.recurrence.kind === "custom" && !(def.recurrence.everyDays >= 2)) return "La repetición personalizada debe ser cada 2 días o más";
+  if (def.recurrence.kind === "hours") {
+    const n = def.recurrence.everyHours;
+    if (!Number.isInteger(n) || n < 1 || n > MAX_FRECUENCIA_HORAS) return "La frecuencia debe ser entre 1 y 24 horas";
+    if (!def.endDate || !def.endTime || !/^\d{2}:\d{2}$/.test(def.endTime)) return "Indica la fecha y hora de término del tratamiento";
+    if (dueDateTime(def.endDate, def.endTime) <= dueDateTime(def.startDate, def.time)) {
+      return "El término debe ser posterior a la primera dosis";
+    }
+  }
   return null;
 }
 
@@ -267,12 +318,40 @@ export function estaVigente(t: { eliminada?: boolean }): boolean {
   return t.eliminada !== true;
 }
 
-/** Ocurrencias vigentes y pendientes que se pueden modificar "desde esta fecha en adelante". */
-export function ocurrenciasModificablesDesde<T extends Pick<Task, "dueDate" | "status" | "eliminada">>(
+/** Clave ordenable "YYYY-MM-DD HH:mm". */
+export function claveMomento(m: Momento): string {
+  return `${m.dueDate} ${m.time}`;
+}
+
+/**
+ * Ocurrencias vigentes y pendientes que se pueden modificar "desde esta en adelante".
+ * Compara fecha y hora: en un tratamiento cada 8 h, desde la dosis de las 16:00 no
+ * incluye la de las 08:00 del mismo día.
+ */
+export function ocurrenciasModificablesDesde<T extends Pick<Task, "dueDate" | "time" | "status" | "eliminada">>(
   ocurrencias: T[],
-  desdeISO: string
+  desde: Momento
 ): T[] {
-  return ocurrencias.filter((o) => o.dueDate >= desdeISO && esModificable(o) && estaVigente(o));
+  const clave = claveMomento(desde);
+  return ocurrencias.filter((o) => claveMomento(o) >= clave && esModificable(o) && estaVigente(o));
+}
+
+/** ¿Ya pasó su hora sin marcarse? */
+export function estaAtrasada(t: Pick<Task, "status" | "dueDate" | "time">, now: Date): boolean {
+  return t.status === "pending" && dueDateTime(t.dueDate, t.time) < now;
+}
+
+/**
+ * Se puede quitar si está pendiente y su hora aún no llega. Las atrasadas sin marcar
+ * quedan como no cumplidas en la adherencia (OE2); completarlas con atraso sí se permite.
+ */
+export function esQuitable(t: Pick<Task, "status" | "dueDate" | "time">, now: Date): boolean {
+  return esModificable(t) && !estaAtrasada(t, now);
+}
+
+/** En los tratamientos por horas la hora no se edita: se quita la serie y se crea otra. */
+export function esTratamientoPorHoras(t: Pick<Task, "frecuenciaHoras">): boolean {
+  return (t.frecuenciaHoras ?? 0) > 0;
 }
 
 /**
@@ -299,11 +378,12 @@ export function validarCambios(c: CambiosTarea): string | null {
  * la opción "hoy y los días siguientes" solo cuando tiene sentido.
  */
 export function tieneOcurrenciasSiguientes(
-  tareas: Pick<Task, "seriesId" | "dueDate" | "status">[],
-  tarea: Pick<Task, "seriesId" | "dueDate">
+  tareas: Pick<Task, "seriesId" | "dueDate" | "time" | "status">[],
+  tarea: Pick<Task, "seriesId" | "dueDate" | "time">
 ): boolean {
+  const clave = claveMomento(tarea);
   return tareas.some(
-    (t) => t.seriesId === tarea.seriesId && t.dueDate > tarea.dueDate && esModificable(t)
+    (t) => t.seriesId === tarea.seriesId && claveMomento(t) > clave && esModificable(t)
   );
 }
 
@@ -319,4 +399,15 @@ export function agruparTareasDelDia(
     pendientes: delDia.filter((t) => t.status === "pending"),
     completadas: delDia.filter((t) => t.status === "done"),
   };
+}
+
+/**
+ * Tareas pendientes de mañana, para la sección "Próximas" (solo se ven, no se marcan).
+ * Incluye las dosis de las 00:00, que pertenecen al día siguiente.
+ */
+export function tareasDeManana(tareas: Task[], hoyISO: string): Task[] {
+  const manana = addDays(hoyISO, 1);
+  return tareas
+    .filter((t) => t.dueDate === manana && t.status === "pending" && estaVigente(t))
+    .sort((a, b) => a.time.localeCompare(b.time));
 }

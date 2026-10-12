@@ -15,6 +15,11 @@ import {
   agruparTareasDelDia,
   ocurrenciasModificablesDesde,
   validarCambios,
+  generarOcurrencias,
+  estaAtrasada,
+  esQuitable,
+  esTratamientoPorHoras,
+  tareasDeManana,
   type Task,
   type TaskDefinition,
 } from "./tasks.logic";
@@ -174,7 +179,7 @@ describe("edición por el cuidador", () => {
       task({ id: "c", dueDate: "2026-10-12", status: "pending" }),
       task({ id: "d", dueDate: "2026-10-13", status: "pending" }),
     ];
-    expect(ocurrenciasModificablesDesde(serie, "2026-10-12").map((t) => t.id)).toEqual(["c", "d"]);
+    expect(ocurrenciasModificablesDesde(serie, { dueDate: "2026-10-12", time: "08:00" }).map((t) => t.id)).toEqual(["c", "d"]);
   });
 
   it("una tarea quitada no está vigente; las antiguas sin el campo sí lo están", () => {
@@ -188,7 +193,7 @@ describe("edición por el cuidador", () => {
       task({ id: "c", dueDate: "2026-10-12", eliminada: true }),
       task({ id: "d", dueDate: "2026-10-13" }),
     ];
-    expect(ocurrenciasModificablesDesde(serie, "2026-10-12").map((t) => t.id)).toEqual(["d"]);
+    expect(ocurrenciasModificablesDesde(serie, { dueDate: "2026-10-12", time: "08:00" }).map((t) => t.id)).toEqual(["d"]);
   });
 
   it("valida nombre y hora al editar", () => {
@@ -222,5 +227,111 @@ describe("vista del día para el cuidador", () => {
     );
     expect(r.pendientes.map((t) => t.id)).toEqual(["manana", "tarde"]);
     expect(r.completadas.map((t) => t.id)).toEqual(["hecha"]);
+  });
+});
+
+// ---------- tratamientos cada N horas (5a) ----------
+
+const porHoras: TaskDefinition = {
+  ...base,
+  title: "Paracetamol 500 mg",
+  time: "08:00",
+  startDate: "2026-10-14",
+  recurrence: { kind: "hours", everyHours: 8 },
+  endDate: "2026-10-15",
+  endTime: "16:00",
+};
+
+describe("tratamiento cada N horas", () => {
+  it("genera dosis cada 8 h desde la primera hasta el término (inclusive), cruzando la medianoche", () => {
+    expect(generarOcurrencias(porHoras)).toEqual([
+      { dueDate: "2026-10-14", time: "08:00" },
+      { dueDate: "2026-10-14", time: "16:00" },
+      { dueDate: "2026-10-15", time: "00:00" },
+      { dueDate: "2026-10-15", time: "08:00" },
+      { dueDate: "2026-10-15", time: "16:00" },
+    ]);
+  });
+
+  it("no pasa del horizonte de 60 días aunque el término sea posterior", () => {
+    const r = generarOcurrencias({ ...porHoras, recurrence: { kind: "hours", everyHours: 4 }, endDate: "2027-06-01", endTime: "08:00" });
+    expect(r).toHaveLength(60 * 6);
+    expect(r[r.length - 1]).toEqual({ dueDate: "2026-12-13", time: "04:00" });
+  });
+
+  it("las series por días mantienen la hora fija", () => {
+    const r = generarOcurrencias({ ...base, endDate: "2026-10-06" });
+    expect(r).toEqual([
+      { dueDate: "2026-10-05", time: "08:00" },
+      { dueDate: "2026-10-06", time: "08:00" },
+    ]);
+  });
+
+  it("exige frecuencia entre 1 y 24 h y término posterior a la primera dosis", () => {
+    expect(validateDefinition(porHoras)).toBeNull();
+    expect(validateDefinition({ ...porHoras, recurrence: { kind: "hours", everyHours: 0 } })).toMatch(/frecuencia/);
+    expect(validateDefinition({ ...porHoras, recurrence: { kind: "hours", everyHours: 25 } })).toMatch(/frecuencia/);
+    expect(validateDefinition({ ...porHoras, recurrence: { kind: "hours", everyHours: 7.5 } })).toMatch(/frecuencia/);
+    expect(validateDefinition({ ...porHoras, endTime: undefined })).toMatch(/término/);
+    expect(validateDefinition({ ...porHoras, endDate: "2026-10-14", endTime: "08:00" })).toMatch(/posterior/);
+  });
+
+  it("reconoce las tareas de un tratamiento por horas", () => {
+    expect(esTratamientoPorHoras(task({ frecuenciaHoras: 8 }))).toBe(true);
+    expect(esTratamientoPorHoras(task({}))).toBe(false);
+  });
+});
+
+describe("'esta y las siguientes' compara fecha y hora", () => {
+  const dosis = [
+    task({ id: "d08", dueDate: "2026-10-14", time: "08:00" }),
+    task({ id: "d16", dueDate: "2026-10-14", time: "16:00" }),
+    task({ id: "d00", dueDate: "2026-10-15", time: "00:00" }),
+  ];
+
+  it("desde la dosis de las 16:00 no incluye la de las 08:00 del mismo día", () => {
+    expect(ocurrenciasModificablesDesde(dosis, dosis[1]).map((t) => t.id)).toEqual(["d16", "d00"]);
+  });
+
+  it("la última dosis del día sigue ofreciendo 'siguientes' si hay dosis después de medianoche", () => {
+    expect(tieneOcurrenciasSiguientes(dosis, dosis[1])).toBe(true);
+    expect(tieneOcurrenciasSiguientes(dosis, dosis[2])).toBe(false);
+    // misma fecha, hora posterior: cuenta como siguiente
+    expect(tieneOcurrenciasSiguientes(dosis.slice(0, 2), dosis[0])).toBe(true);
+  });
+});
+
+describe("no se pueden quitar las atrasadas (OE2)", () => {
+  const ahora = new Date(2026, 9, 12, 10, 0);
+
+  it("una pendiente cuya hora pasó está atrasada y no se puede quitar", () => {
+    const t = task({ dueDate: "2026-10-12", time: "08:00" });
+    expect(estaAtrasada(t, ahora)).toBe(true);
+    expect(esQuitable(t, ahora)).toBe(false);
+  });
+
+  it("una pendiente futura sí se puede quitar; una completada no", () => {
+    expect(esQuitable(task({ dueDate: "2026-10-12", time: "12:00" }), ahora)).toBe(true);
+    expect(esQuitable(task({ dueDate: "2026-10-12", time: "12:00", status: "done" }), ahora)).toBe(false);
+  });
+
+  it("una completada con atraso no cuenta como atrasada", () => {
+    expect(estaAtrasada(task({ dueDate: "2026-10-12", time: "08:00", status: "done" }), ahora)).toBe(false);
+  });
+});
+
+describe("sección Próximas (todo el día de mañana)", () => {
+  it("lista solo las pendientes vigentes de mañana, ordenadas por hora, incluida la de 00:00", () => {
+    const r = tareasDeManana(
+      [
+        task({ id: "hoy", dueDate: "2026-10-12", time: "23:00" }),
+        task({ id: "clinica", dueDate: "2026-10-13", time: "08:00" }),
+        task({ id: "medianoche", dueDate: "2026-10-13", time: "00:00" }),
+        task({ id: "quitada", dueDate: "2026-10-13", time: "09:00", eliminada: true }),
+        task({ id: "pasado", dueDate: "2026-10-14", time: "08:00" }),
+      ],
+      "2026-10-12"
+    );
+    expect(r.map((t) => t.id)).toEqual(["medianoche", "clinica"]);
   });
 });
