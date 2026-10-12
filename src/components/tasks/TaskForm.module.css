@@ -77,3 +77,25 @@
   color: var(--color-emergencia);
   font-size: var(--texto-sm);
 }
+
+/* Resumen de dosis de un tratamiento cada N horas. */
+.vistaPrevia {
+  margin-top: var(--espacio-3);
+  padding: var(--espacio-3) var(--espacio-4);
+  border-radius: var(--radio-boton);
+  background: var(--color-info-suave);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+}
+
+/* Aviso de que la hora de un tratamiento por horas no se puede cambiar. */
+.avisoHora {
+  margin-top: var(--espacio-2);
+  padding: var(--espacio-3) var(--espacio-4);
+  border: 1.5px solid var(--color-emergencia);
+  border-radius: var(--radio-boton);
+  background: var(--color-emergencia-suave);
+  color: var(--color-emergencia);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+}

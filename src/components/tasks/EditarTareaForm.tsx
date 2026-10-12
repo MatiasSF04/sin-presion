@@ -3,7 +3,9 @@ import { Boton } from "../base/Boton";
 import { Chip } from "../base/Chip";
 import { Tarjeta } from "../base/Tarjeta";
 import s from "./TaskForm.module.css";
-import { validarCambios, type CambiosTarea, type Task, type TaskCategory } from "../../services/tasks.logic";
+import {
+  esTratamientoPorHoras, validarCambios, type CambiosTarea, type Task, type TaskCategory,
+} from "../../services/tasks.logic";
 import { CATEGORIAS, OPCIONES_RECORDATORIO } from "./opcionesTarea";
 
 export type AlcanceEdicion = "solo" | "siguientes";
@@ -18,7 +20,8 @@ interface Props {
 
 /**
  * Edición de una tarea existente. Solo cambia nombre, nota, tipo, hora y recordatorios;
- * para cambiar fecha o repetición se quita la tarea y se crea otra.
+ * para cambiar fecha o repetición se quita la tarea y se crea otra. En los tratamientos
+ * por horas la hora tampoco se cambia (el servicio la ignora igual).
  */
 export function EditarTareaForm({ tarea, ofrecerSiguientes, onGuardar, onCancelar }: Props) {
   const [title, setTitle] = useState(tarea.title);
@@ -30,6 +33,7 @@ export function EditarTareaForm({ tarea, ofrecerSiguientes, onGuardar, onCancela
   const [alcance, setAlcance] = useState<AlcanceEdicion>("solo");
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  const porHoras = esTratamientoPorHoras(tarea);
 
   async function guardar() {
     const cambios: CambiosTarea = { title, notes, category, time, remindBeforeMin: remind, notifyMissed };
@@ -61,8 +65,24 @@ export function EditarTareaForm({ tarea, ofrecerSiguientes, onGuardar, onCancela
         ))}
       </div>
 
-      <label className={s.etiqueta} htmlFor="editar-hora">Hora</label>
-      <input id="editar-hora" className={s.campo} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+      <label className={s.etiqueta} htmlFor="editar-hora">
+        {porHoras ? `Hora (tratamiento cada ${tarea.frecuenciaHoras} h)` : "Hora"}
+      </label>
+      <input
+        id="editar-hora"
+        className={s.campo}
+        type="time"
+        value={time}
+        disabled={porHoras}
+        aria-describedby={porHoras ? "editar-hora-aviso" : undefined}
+        onChange={(e) => setTime(e.target.value)}
+      />
+      {porHoras && (
+        <p id="editar-hora-aviso" className={s.avisoHora}>
+          No es posible modificar las horas de un tratamiento con medicamentos. Para modificar la hora de
+          ingesta debe eliminar y volver a crear la tarea.
+        </p>
+      )}
 
       <label className={s.etiqueta} htmlFor="editar-nota">Nota (opcional)</label>
       <input
@@ -89,9 +109,11 @@ export function EditarTareaForm({ tarea, ofrecerSiguientes, onGuardar, onCancela
         <>
           <p className={s.etiqueta}>Aplicar el cambio a</p>
           <div className={s.opciones}>
-            <Chip activo={alcance === "solo"} onClick={() => setAlcance("solo")}>Solo hoy</Chip>
+            <Chip activo={alcance === "solo"} onClick={() => setAlcance("solo")}>
+              {porHoras ? "Solo esta dosis" : "Solo hoy"}
+            </Chip>
             <Chip activo={alcance === "siguientes"} onClick={() => setAlcance("siguientes")}>
-              Hoy y los días siguientes
+              {porHoras ? "Esta y las siguientes dosis" : "Hoy y los días siguientes"}
             </Chip>
           </div>
         </>
