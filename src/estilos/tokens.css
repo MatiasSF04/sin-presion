@@ -30,6 +30,7 @@
   --color-velo-claro: rgba(255, 255, 255, 0.25); /* círculos sobre fondos de color */
   --color-velo-opaco: rgba(255, 255, 255, 0.92); /* teclas del PIN e íconos sobre color */
   --color-error-sobre-color: #ffe3e3;
+  --color-velo-oscuro: rgba(31, 41, 51, 0.55); /* fondo detrás de los diálogos modales */
 
   /* ---------- Tipografía ----------
    * Escala pensada para adultos mayores: el texto de lectura nunca baja de 16px

@@ -11,6 +11,7 @@ import {
   startOfWeek,
   esModificable,
   estaVigente,
+  tieneOcurrenciasSiguientes,
   ocurrenciasModificablesDesde,
   validarCambios,
   type Task,
@@ -194,5 +195,15 @@ describe("edición por el cuidador", () => {
     expect(validarCambios(ok)).toBeNull();
     expect(validarCambios({ ...ok, title: "  " })).toMatch(/nombre/);
     expect(validarCambios({ ...ok, time: "8" })).toMatch(/hora/);
+  });
+});
+
+describe("opción 'hoy y los días siguientes'", () => {
+  it("aparece solo si la serie tiene ocurrencias pendientes posteriores", () => {
+    const hoy = task({ id: "h", seriesId: "s1", dueDate: "2026-10-12" });
+    expect(tieneOcurrenciasSiguientes([hoy, task({ id: "m", seriesId: "s1", dueDate: "2026-10-13" })], hoy)).toBe(true);
+    expect(tieneOcurrenciasSiguientes([hoy], hoy)).toBe(false); // tarea única
+    expect(tieneOcurrenciasSiguientes([hoy, task({ id: "o", seriesId: "s2", dueDate: "2026-10-13" })], hoy)).toBe(false); // otra serie
+    expect(tieneOcurrenciasSiguientes([hoy, task({ id: "m", seriesId: "s1", dueDate: "2026-10-13", status: "done" })], hoy)).toBe(false);
   });
 });

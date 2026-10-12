@@ -7,10 +7,22 @@ import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { BarraProgreso } from "../../components/base/BarraProgreso";
 import { Tarjeta } from "../../components/base/Tarjeta";
 import { Boton } from "../../components/base/Boton";
+import { Dialogo } from "../../components/base/Dialogo";
+import { AvisoDeshacer } from "../../components/base/AvisoDeshacer";
 import { unirClases } from "../../estilos/unirClases";
 import s from "./TasksPage.module.css";
-import { createTaskSeries, setTaskDone, quitarTarea, quitarSerieDesde } from "../../services/tasks.service";
-import { computeDayProgress, computeWeeklyAdherence, taskState, toISODate, type TaskDefinition } from "../../services/tasks.logic";
+import {
+  createTaskSeries, setTaskDone, quitarTarea, quitarSerieDesde, restaurarTareas, ErrorTarea,
+} from "../../services/tasks.service";
+import {
+  computeDayProgress, computeWeeklyAdherence, taskState, tieneOcurrenciasSiguientes, toISODate,
+  type Task, type TaskDefinition,
+} from "../../services/tasks.logic";
+
+interface AvisoQuitar {
+  mensaje: string;
+  ids: string[];
+}
 
 export function TasksPage() {
   const { appUser } = useAuth();
@@ -19,6 +31,10 @@ export function TasksPage() {
   const [showForm, setShowForm] = useState(false);
   const [now, setNow] = useState(new Date());
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [porQuitar, setPorQuitar] = useState<Task | null>(null);
+  const [quitando, setQuitando] = useState(false);
+  const [aviso, setAviso] = useState<AvisoQuitar | null>(null);
+  const [errorAccion, setErrorAccion] = useState<string | null>(null);
 
   // refresca estados (vencida/pendiente) cada minuto
   useEffect(() => {
@@ -46,13 +62,41 @@ export function TasksPage() {
     }
   }
 
-  async function remove(id: string, seriesId: string, dueDate: string) {
-    if (!elderUid) return;
-    const all = window.confirm("¿Eliminar también las repeticiones siguientes?\nAceptar = esta y las siguientes · Cancelar = solo esta");
-    // [PROVISORIO] El window.confirm se reemplaza por un modal en el commit 4b.
+  async function quitar(modo: "hoy" | "serie") {
+    if (!elderUid || !porQuitar) return;
+    const t = porQuitar;
     const por = { uid: elderUid, rol: "elder" as const };
-    if (all) await quitarSerieDesde(elderUid, seriesId, dueDate, por);
-    else await quitarTarea(id, por);
+    setQuitando(true);
+    setErrorAccion(null);
+    try {
+      const ids =
+        modo === "hoy"
+          ? await quitarTarea(t.id, por)
+          : await quitarSerieDesde(elderUid, t.seriesId, t.dueDate, por);
+      setAviso({
+        mensaje: modo === "hoy" ? `Quitaste «${t.title}» de hoy.` : `Quitaste «${t.title}» desde hoy en adelante.`,
+        ids,
+      });
+      setPorQuitar(null);
+    } catch (e) {
+      if (!(e instanceof ErrorTarea)) console.error("No se pudo quitar la tarea", e);
+      setErrorAccion(e instanceof ErrorTarea ? e.message : "No se pudo quitar la tarea. Revisa tu conexión.");
+      setPorQuitar(null);
+    } finally {
+      setQuitando(false);
+    }
+  }
+
+  async function deshacer() {
+    if (!aviso) return;
+    const ids = aviso.ids;
+    setAviso(null);
+    try {
+      await restaurarTareas(ids);
+    } catch (e) {
+      console.error("No se pudo deshacer", e);
+      setErrorAccion("No se pudo deshacer. Revisa tu conexión.");
+    }
   }
 
   return (
@@ -78,6 +122,7 @@ export function TasksPage() {
       </Tarjeta>
 
       {error && <p className={s.error} role="alert">No se pudieron cargar las tareas: {error}</p>}
+      {errorAccion && <p className={s.error} role="alert">{errorAccion}</p>}
       {loading && <p className={s.mensaje}>Cargando…</p>}
       {!loading && todays.length === 0 && <p className={s.mensaje}>No tienes tareas para hoy.</p>}
 
@@ -102,7 +147,7 @@ export function TasksPage() {
               </div>
             </div>
             {!done && (
-              <button type="button" aria-label="Eliminar" onClick={() => remove(t.id, t.seriesId, t.dueDate)} className={s.eliminar}>
+              <button type="button" aria-label={`Quitar ${t.title}`} onClick={() => setPorQuitar(t)} className={s.eliminar}>
                 <span aria-hidden="true">🗑</span>
               </button>
             )}
@@ -115,6 +160,27 @@ export function TasksPage() {
       ) : (
         <Boton variante="agregar" bloque onClick={() => setShowForm(true)}>+ Agregar tarea</Boton>
       )}
+
+      <Dialogo
+        abierto={porQuitar !== null}
+        titulo={porQuitar ? `¿Quitar «${porQuitar.title}» de las ${porQuitar.time}?` : ""}
+        descripcion="Podrás deshacerlo durante unos segundos."
+        onCerrar={() => !quitando && setPorQuitar(null)}
+      >
+        <Boton variante="emergencia" bloque disabled={quitando} onClick={() => quitar("hoy")}>
+          Quitar solo la de hoy
+        </Boton>
+        {porQuitar && tieneOcurrenciasSiguientes(tasks, porQuitar) && (
+          <Boton variante="secundario" bloque disabled={quitando} className={s.quitarSerie} onClick={() => quitar("serie")}>
+            Quitar hoy y los días siguientes
+          </Boton>
+        )}
+        <Boton variante="secundario" bloque disabled={quitando} onClick={() => setPorQuitar(null)}>
+          Cancelar
+        </Boton>
+      </Dialogo>
+
+      {aviso && <AvisoDeshacer mensaje={aviso.mensaje} onDeshacer={deshacer} onCerrar={() => setAviso(null)} />}
     </div>
   );
 }

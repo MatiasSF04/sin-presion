@@ -99,3 +99,10 @@
   font-size: var(--texto-lg);
   opacity: 0.7;
 }
+
+/* Opción destructiva secundaria del diálogo de quitar: borde y texto de alerta. */
+.quitarSerie {
+  border-color: var(--color-emergencia);
+  color: var(--color-emergencia);
+  font-weight: var(--peso-fuerte);
+}

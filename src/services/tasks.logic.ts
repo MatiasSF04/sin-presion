@@ -293,3 +293,16 @@ export function validarCambios(c: CambiosTarea): string | null {
   if (!/^\d{2}:\d{2}$/.test(c.time)) return "Indica la hora";
   return null;
 }
+
+/**
+ * ¿Quedan ocurrencias pendientes de la misma serie después de esta? Sirve para mostrar
+ * la opción "hoy y los días siguientes" solo cuando tiene sentido.
+ */
+export function tieneOcurrenciasSiguientes(
+  tareas: Pick<Task, "seriesId" | "dueDate" | "status">[],
+  tarea: Pick<Task, "seriesId" | "dueDate">
+): boolean {
+  return tareas.some(
+    (t) => t.seriesId === tarea.seriesId && t.dueDate > tarea.dueDate && esModificable(t)
+  );
+}
