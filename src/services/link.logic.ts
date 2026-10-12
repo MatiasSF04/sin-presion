@@ -32,6 +32,19 @@ export function estaVencido(expiraEn: Date, ahora: Date): boolean {
   return expiraEn.getTime() <= ahora.getTime();
 }
 
+/** "482917" → "482 917", más fácil de leer y dictar en voz alta. */
+export function formatearCodigo(codigo: string): string {
+  return codigo.length === LARGO_CODIGO ? `${codigo.slice(0, 3)} ${codigo.slice(3)}` : codigo;
+}
+
+/** Tiempo restante como "mm:ss"; "00:00" si ya venció. */
+export function tiempoRestante(expiraEn: Date, ahora: Date): string {
+  const seg = Math.max(0, Math.ceil((expiraEn.getTime() - ahora.getTime()) / 1000));
+  const mm = String(Math.floor(seg / 60)).padStart(2, "0");
+  const ss = String(seg % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
 /** Id determinístico del vínculo; las reglas de Firestore dependen de este formato. */
 export function idVinculo(elderUid: string, cuidadorUid: string): string {
   return `${elderUid}_${cuidadorUid}`;

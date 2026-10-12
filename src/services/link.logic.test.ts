@@ -4,8 +4,8 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  calcularExpiracion, esCodigoValido, estaVencido, generarCodigo, idVinculo, normalizarCodigo,
-  MINUTOS_VIGENCIA,
+  calcularExpiracion, esCodigoValido, estaVencido, formatearCodigo, generarCodigo, idVinculo,
+  normalizarCodigo, tiempoRestante, MINUTOS_VIGENCIA,
 } from "./link.logic";
 
 describe("generarCodigo", () => {
@@ -45,6 +45,19 @@ describe("vigencia del código", () => {
     const expira = calcularExpiracion(ahora);
     expect(estaVencido(expira, new Date(expira.getTime() - 60_000))).toBe(false);
     expect(estaVencido(expira, expira)).toBe(true);
+  });
+});
+
+describe("formatearCodigo y tiempoRestante", () => {
+  it("separa el código en dos grupos de 3 dígitos", () => {
+    expect(formatearCodigo("482917")).toBe("482 917");
+  });
+
+  it("muestra el tiempo restante como mm:ss y nunca negativo", () => {
+    const ahora = new Date("2026-10-11T20:00:00");
+    expect(tiempoRestante(calcularExpiracion(ahora), ahora)).toBe("15:00");
+    expect(tiempoRestante(new Date(ahora.getTime() + 61_500), ahora)).toBe("01:02");
+    expect(tiempoRestante(new Date(ahora.getTime() - 5_000), ahora)).toBe("00:00");
   });
 });
 

@@ -1,0 +1,7 @@
+.pagina {
+  min-height: 100svh;
+  padding: var(--espacio-5);
+  max-width: var(--ancho-contenido);
+  margin: 0 auto;
+  font-size: var(--texto-base);
+}

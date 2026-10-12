@@ -79,7 +79,14 @@ export function HomePage() {
   return (
     <div className={s.pagina}>
       <header className={s.encabezado}>
-        <span className={s.circulo} aria-hidden="true">👤</span>
+        <button
+          type="button"
+          className={s.circulo}
+          onClick={() => navigate("/settings")}
+          aria-label="Mi perfil"
+        >
+          <span aria-hidden="true">👤</span>
+        </button>
         <span className={s.fecha}>{now.toLocaleDateString("es-CL")}</span>
         <button
           type="button"

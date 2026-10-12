@@ -1,0 +1,62 @@
+.pagina {
+  min-height: 100svh;
+  padding: var(--espacio-5);
+  max-width: var(--ancho-contenido);
+  margin: 0 auto;
+}
+
+.tituloSeccion {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-fuerte);
+  margin-bottom: var(--espacio-2);
+}
+
+.texto {
+  font-size: var(--texto-base);
+  color: var(--color-texto-secundario);
+  line-height: var(--interlineado);
+  margin-bottom: var(--espacio-4);
+}
+
+.codigoCaja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-1);
+  padding: var(--espacio-5) var(--espacio-4);
+  margin-bottom: var(--espacio-4);
+  border-radius: var(--radio-tarjeta);
+  background: var(--color-primario-suave);
+}
+
+.codigo {
+  font-size: 44px; /* excepción deliberada: el código se lee y se dicta en voz alta */
+  font-weight: var(--peso-fuerte);
+  letter-spacing: 0.12em;
+  color: var(--color-primario);
+  font-variant-numeric: tabular-nums;
+}
+
+.vigencia {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  font-variant-numeric: tabular-nums;
+}
+
+.aviso {
+  font-size: var(--texto-base);
+  color: var(--color-advertencia-texto);
+  background: var(--color-advertencia-suave);
+  border-radius: var(--radio-chip);
+  padding: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
+
+.error {
+  font-size: var(--texto-base);
+  color: var(--color-emergencia);
+  background: var(--color-emergencia-suave);
+  border-radius: var(--radio-chip);
+  padding: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
