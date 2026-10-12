@@ -64,7 +64,9 @@ service cloud.firestore {
     }
 
     match /vinculos/{vinculoId} {
-      allow read: if esYo(resource.data.elderUid) || esYo(resource.data.cuidadorUid);
+      // resource == null: permite consultar si el vínculo existe (no expone datos)
+      allow read: if resource == null
+        || esYo(resource.data.elderUid) || esYo(resource.data.cuidadorUid);
       allow create: if esYo(request.resource.data.cuidadorUid) && rolActual() == 'caregiver'
         && vinculoId == request.resource.data.elderUid + '_' + request.auth.uid
         && get(/databases/$(database)/documents/codigosVinculo/$(request.resource.data.codigo)).data.elderUid
