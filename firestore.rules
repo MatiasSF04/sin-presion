@@ -38,17 +38,18 @@ service cloud.firestore {
       allow read: if puedeVer(resource.data.elderUid);
       allow create: if puedeVer(request.resource.data.elderUid);
 
-      // adulto mayor: control total sobre lo suyo
+      // adulto mayor: control sobre lo suyo, salvo quitar una tarea completada (historial)
       allow update: if esYo(resource.data.elderUid)
-        && request.resource.data.elderUid == resource.data.elderUid;
+        && request.resource.data.elderUid == resource.data.elderUid
+        && !(resource.data.status == 'done' && request.resource.data.get('eliminada', false) == true);
       // cuidador: solo tareas pendientes y sin tocar el estado (protege la adherencia)
       allow update: if esCuidadorDe(resource.data.elderUid)
         && resource.data.status == 'pending'
         && !request.resource.data.diff(resource.data).affectedKeys()
               .hasAny(['status', 'completedAt', 'elderUid']);
 
-      allow delete: if esYo(resource.data.elderUid)
-        || (esCuidadorDe(resource.data.elderUid) && resource.data.status == 'pending');
+      // quitar es soft delete (campo eliminada): nadie borra documentos de tareas
+      allow delete: if false;
     }
 
     // ---------- vinculación ----------

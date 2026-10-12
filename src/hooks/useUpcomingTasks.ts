@@ -13,12 +13,17 @@ interface Respuesta {
 /**
  * Una sola suscripción compartida: desde min(ayer, lunes) hasta hoy+HORIZON.
  * Cubre checklist de hoy, adherencia semanal, calendario y avisos "no cumplido" (día anterior).
- * Cada cambio reprograma las notificaciones locales con la misma lista.
+ * Cada cambio reprograma las notificaciones locales con la misma lista, salvo que se
+ * desactive con `programarRecordatorios: false` (vista del cuidador: los recordatorios
+ * son del adulto mayor y no deben sonar en el teléfono del cuidador).
  *
  * El estado "cargando" no se guarda: se deriva comparando la consulta actual con la de la
  * última respuesta. Así el efecto solo actualiza estado desde los callbacks de Firestore.
  */
-export function useUpcomingTasks(elderUid: string | undefined) {
+export function useUpcomingTasks(
+  elderUid: string | undefined,
+  { programarRecordatorios = true }: { programarRecordatorios?: boolean } = {}
+) {
   const today = toISODate(new Date());
   const from = useMemo(() => {
     const yesterday = addDays(today, -1);
@@ -38,11 +43,13 @@ export function useUpcomingTasks(elderUid: string | undefined) {
       to,
       (list) => {
         setRespuesta({ clave, tasks: list, error: null });
-        syncReminders(list).catch((e) => console.warn("No se pudieron programar recordatorios", e));
+        if (programarRecordatorios) {
+          syncReminders(list).catch((e) => console.warn("No se pudieron programar recordatorios", e));
+        }
       },
       (e) => setRespuesta({ clave, tasks: [], error: e.message })
     );
-  }, [elderUid, from, to, clave]);
+  }, [elderUid, from, to, clave, programarRecordatorios]);
 
   if (!clave) return { tasks: [] as Task[], loading: false, error: null };
 

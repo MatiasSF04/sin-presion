@@ -38,6 +38,15 @@ export interface Task {
   notifyMissed: boolean;
   status: "pending" | "done";
   completedAt?: Date;
+  /** Quién creó la tarea. Las tareas anteriores a este campo no lo tienen. */
+  creadoPor?: CreadoPor;
+  /** Soft delete: la tarea se quitó pero el documento se conserva como historial. */
+  eliminada?: boolean;
+}
+
+export interface CreadoPor {
+  uid: string;
+  rol: "elder" | "caregiver";
 }
 
 export const HORIZON_DAYS = 60;
@@ -241,4 +250,46 @@ export function buildNotificationPlan(
   }
 
   return plan.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, limit);
+}
+
+// ---------- edición por el cuidador ----------
+
+/**
+ * Solo se pueden editar o quitar tareas pendientes: las completadas son el registro
+ * de adherencia del estudio (OE2). Las reglas de Firestore aplican lo mismo al cuidador.
+ */
+export function esModificable(t: Pick<Task, "status">): boolean {
+  return t.status === "pending";
+}
+
+/** Una tarea vigente es la que no fue quitada (soft delete). Las antiguas no tienen el campo. */
+export function estaVigente(t: { eliminada?: boolean }): boolean {
+  return t.eliminada !== true;
+}
+
+/** Ocurrencias vigentes y pendientes que se pueden modificar "desde esta fecha en adelante". */
+export function ocurrenciasModificablesDesde<T extends Pick<Task, "dueDate" | "status" | "eliminada">>(
+  ocurrencias: T[],
+  desdeISO: string
+): T[] {
+  return ocurrencias.filter((o) => o.dueDate >= desdeISO && esModificable(o) && estaVigente(o));
+}
+
+/**
+ * Campos que se pueden cambiar al editar una tarea existente. Fecha y repetición no:
+ * para eso se quita la tarea y se crea otra, así la serie nunca queda inconsistente.
+ */
+export interface CambiosTarea {
+  title: string;
+  notes?: string;
+  category: TaskCategory;
+  time: string;
+  remindBeforeMin: number;
+  notifyMissed: boolean;
+}
+
+export function validarCambios(c: CambiosTarea): string | null {
+  if (!c.title.trim()) return "Escribe el nombre de la tarea";
+  if (!/^\d{2}:\d{2}$/.test(c.time)) return "Indica la hora";
+  return null;
 }

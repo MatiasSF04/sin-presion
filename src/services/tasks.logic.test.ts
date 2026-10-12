@@ -9,6 +9,10 @@ import {
   validateDefinition,
   taskState,
   startOfWeek,
+  esModificable,
+  estaVigente,
+  ocurrenciasModificablesDesde,
+  validarCambios,
   type Task,
   type TaskDefinition,
 } from "./tasks.logic";
@@ -152,5 +156,43 @@ describe("plan de notificaciones", () => {
     expect(a).not.toBe(notificationId("abc", "missed"));
     expect(a).toBeGreaterThan(0);
     expect(a).toBeLessThan(2_147_483_647);
+  });
+});
+
+describe("edición por el cuidador", () => {
+  it("solo las tareas pendientes son modificables", () => {
+    expect(esModificable(task({ status: "pending" }))).toBe(true);
+    expect(esModificable(task({ status: "done" }))).toBe(false);
+  });
+
+  it("'desde esta fecha' toma las pendientes de esa fecha en adelante y conserva las completadas", () => {
+    const serie = [
+      task({ id: "a", dueDate: "2026-10-11", status: "pending" }), // anterior: no se toca
+      task({ id: "b", dueDate: "2026-10-12", status: "done" }), // completada: historial
+      task({ id: "c", dueDate: "2026-10-12", status: "pending" }),
+      task({ id: "d", dueDate: "2026-10-13", status: "pending" }),
+    ];
+    expect(ocurrenciasModificablesDesde(serie, "2026-10-12").map((t) => t.id)).toEqual(["c", "d"]);
+  });
+
+  it("una tarea quitada no está vigente; las antiguas sin el campo sí lo están", () => {
+    expect(estaVigente(task({}))).toBe(true);
+    expect(estaVigente(task({ eliminada: false }))).toBe(true);
+    expect(estaVigente(task({ eliminada: true }))).toBe(false);
+  });
+
+  it("'desde esta fecha' ignora las ocurrencias ya quitadas", () => {
+    const serie = [
+      task({ id: "c", dueDate: "2026-10-12", eliminada: true }),
+      task({ id: "d", dueDate: "2026-10-13" }),
+    ];
+    expect(ocurrenciasModificablesDesde(serie, "2026-10-12").map((t) => t.id)).toEqual(["d"]);
+  });
+
+  it("valida nombre y hora al editar", () => {
+    const ok = { title: "Losartán", category: "medicamento" as const, time: "08:00", remindBeforeMin: 15, notifyMissed: true };
+    expect(validarCambios(ok)).toBeNull();
+    expect(validarCambios({ ...ok, title: "  " })).toMatch(/nombre/);
+    expect(validarCambios({ ...ok, time: "8" })).toMatch(/hora/);
   });
 });

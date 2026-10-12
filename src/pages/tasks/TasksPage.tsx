@@ -9,7 +9,7 @@ import { Tarjeta } from "../../components/base/Tarjeta";
 import { Boton } from "../../components/base/Boton";
 import { unirClases } from "../../estilos/unirClases";
 import s from "./TasksPage.module.css";
-import { createTaskSeries, setTaskDone, deleteTask, deleteSeriesFrom } from "../../services/tasks.service";
+import { createTaskSeries, setTaskDone, quitarTarea, quitarSerieDesde } from "../../services/tasks.service";
 import { computeDayProgress, computeWeeklyAdherence, taskState, toISODate, type TaskDefinition } from "../../services/tasks.logic";
 
 export function TasksPage() {
@@ -49,8 +49,10 @@ export function TasksPage() {
   async function remove(id: string, seriesId: string, dueDate: string) {
     if (!elderUid) return;
     const all = window.confirm("¿Eliminar también las repeticiones siguientes?\nAceptar = esta y las siguientes · Cancelar = solo esta");
-    if (all) await deleteSeriesFrom(elderUid, seriesId, dueDate);
-    else await deleteTask(id);
+    // [PROVISORIO] El window.confirm se reemplaza por un modal en el commit 4b.
+    const por = { uid: elderUid, rol: "elder" as const };
+    if (all) await quitarSerieDesde(elderUid, seriesId, dueDate, por);
+    else await quitarTarea(id, por);
   }
 
   return (
@@ -99,9 +101,11 @@ export function TasksPage() {
                 {t.time}{st === "overdue" ? " · sin marcar" : ""}
               </div>
             </div>
-            <button type="button" aria-label="Eliminar" onClick={() => remove(t.id, t.seriesId, t.dueDate)} className={s.eliminar}>
-              <span aria-hidden="true">🗑</span>
-            </button>
+            {!done && (
+              <button type="button" aria-label="Eliminar" onClick={() => remove(t.id, t.seriesId, t.dueDate)} className={s.eliminar}>
+                <span aria-hidden="true">🗑</span>
+              </button>
+            )}
           </div>
         );
       })}
