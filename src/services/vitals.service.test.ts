@@ -13,12 +13,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---- Mock de Firestore (sin red, sin tocar la base real) -------------------
 const addDocMock = vi.fn();
 const getDocsMock = vi.fn();
+const onSnapshotMock = vi.fn();
 
 vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
   collection: vi.fn((_db: unknown, name: string) => ({ __collection: name })),
   addDoc: (...args: unknown[]) => addDocMock(...args),
   getDocs: (...args: unknown[]) => getDocsMock(...args),
+  onSnapshot: (...args: unknown[]) => onSnapshotMock(...args),
   query: vi.fn((...args: unknown[]) => ({ __query: args })),
   where: vi.fn(),
   orderBy: vi.fn(),
@@ -30,7 +32,7 @@ vi.mock('firebase/firestore', () => ({
 vi.mock('../firebase', () => ({ db: {}, auth: {} }));
 
 // TODO: ajustar ruta y nombres reales
-import { addVitalReading, getVitalTypeConfig } from './vitals.service';
+import { addVitalReading, escucharMediciones, getVitalTypeConfig } from './vitals.service';
 
 const ELDER = 'uid-adulto-1';
 
@@ -146,4 +148,27 @@ describe('Latencia del registro (apoyo a OE3)', () => {
     await addVitalReading(ELDER, 'presion', { sistolica: 120, diastolica: 80, pulso: 70 }, 'manual');
     expect(performance.now() - t0).toBeLessThan(1000);
   });
-});
+});
+
+describe('escucharMediciones: resumen del cuidador', () => {
+  it('entrega las mediciones con su resultado; las antiguas quedan sin fueraDeRango', () => {
+    const recibidas: unknown[] = [];
+    escucharMediciones(ELDER, (l) => recibidas.push(...l), () => undefined);
+    const onNext = onSnapshotMock.mock.calls[0][1] as (snap: unknown) => void;
+    const fecha = new Date('2026-10-24T10:00:00');
+    const ts = { toDate: () => fecha };
+    onNext({
+      docs: [
+        { id: 'a', data: () => ({ type: 'presion', value: { sistolica: 150 }, source: 'manual', recordedAt: ts,
+          fueraDeRango: true, camposFueraDeRango: ['sistolica'] }) },
+        { id: 'b', data: () => ({ type: 'sueno', value: { horas: 7 }, source: 'manual', recordedAt: ts }) },
+      ],
+    });
+    expect(recibidas).toEqual([
+      { id: 'a', type: 'presion', value: { sistolica: 150 }, source: 'manual', recordedAt: fecha,
+        fueraDeRango: true, camposFueraDeRango: ['sistolica'] },
+      { id: 'b', type: 'sueno', value: { horas: 7 }, source: 'manual', recordedAt: fecha,
+        fueraDeRango: undefined, camposFueraDeRango: undefined },
+    ]);
+  });
+});

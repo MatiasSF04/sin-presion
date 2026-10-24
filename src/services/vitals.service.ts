@@ -1,4 +1,4 @@
-import { collection, addDoc, Timestamp, query, where, orderBy, limit, getDocs, } from "firebase/firestore";
+import { collection, addDoc, Timestamp, query, where, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import type { VitalReading } from "../types";
 import { evaluarMedicion, type RangoOptimo } from "./vitals.logic";
@@ -146,6 +146,44 @@ export interface StoredVitalReading {
   value: Record<string, number>;
   source: "manual" | "device";
   recordedAt: Date;
+  /** Resultado guardado al registrar (desde el commit 8). Las mediciones anteriores no lo tienen. */
+  fueraDeRango?: boolean;
+  camposFueraDeRango?: string[];
+}
+
+function leerMedicion(id: string, data: Record<string, unknown>): StoredVitalReading {
+  return {
+    id,
+    type: data.type as VitalType,
+    value: data.value as Record<string, number>,
+    source: data.source as "manual" | "device",
+    recordedAt: (data.recordedAt as Timestamp).toDate(),
+    fueraDeRango: typeof data.fueraDeRango === "boolean" ? data.fueraDeRango : undefined,
+    camposFueraDeRango: Array.isArray(data.camposFueraDeRango) ? (data.camposFueraDeRango as string[]) : undefined,
+  };
+}
+
+/**
+ * Escucha en vivo las últimas mediciones del adulto mayor (la más reciente primero).
+ * Usa el mismo índice compuesto que getRecentVitalReadings (elderUid + recordedAt desc).
+ */
+export function escucharMediciones(
+  elderUid: string,
+  onLista: (lecturas: StoredVitalReading[]) => void,
+  onError: (e: Error) => void,
+  max = 100
+): () => void {
+  const q = query(
+    collection(db, "vitalReadings"),
+    where("elderUid", "==", elderUid),
+    orderBy("recordedAt", "desc"),
+    limit(max)
+  );
+  return onSnapshot(
+    q,
+    (snap) => onLista(snap.docs.map((d) => leerMedicion(d.id, d.data()))),
+    onError
+  );
 }
 
 export async function getRecentVitalReadings(
@@ -159,14 +197,5 @@ export async function getRecentVitalReadings(
     limit(max)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      type: data.type,
-      value: data.value,
-      source: data.source,
-      recordedAt: (data.recordedAt as Timestamp).toDate(),
-    };
-  });
+  return snapshot.docs.map((d) => leerMedicion(d.id, d.data()));
 }
