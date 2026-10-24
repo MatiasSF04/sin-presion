@@ -26,3 +26,11 @@ dist-ssr
 .env.local
 
 .firebase/*
+
+# Android / Capacitor: llaves de firma y binarios nunca van al repo
+*.jks
+*.keystore
+keystore.properties
+*.apk
+*.aab
+android/app/release/
