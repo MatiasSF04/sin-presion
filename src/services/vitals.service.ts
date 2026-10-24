@@ -1,10 +1,11 @@
 import { collection, addDoc, Timestamp, query, where, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
-import type { VitalReading } from "../types";
 import { evaluarMedicion, limpiarObservaciones, type OpcionSigno, type RangoOptimo } from "./vitals.logic";
 import { aplicarMetas, type MetaCampo } from "./perfil.logic";
 
-export type VitalType = VitalReading["type"];
+export type VitalType =
+  | "presion" | "temperatura" | "sueno" | "azucar" | "pasos"
+  | "hidratacion" | "diuresis" | "deposiciones" | "otro";
 
 interface VitalFieldConfig {
   key: string;

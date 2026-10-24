@@ -5,7 +5,7 @@ import {
 import { db } from "./firebase";
 import {
   generarOcurrencias, validateDefinition, validarCambios, ocurrenciasModificablesDesde,
-  esModificable, estaVigente, estaAtrasada, addDays,
+  esModificable, estaVigente, estaAtrasada,
   type CambiosTarea, type CreadoPor, type Momento, type Task, type TaskDefinition,
 } from "./tasks.logic";
 
@@ -233,5 +233,3 @@ export async function restaurarTareas(ids: string[]): Promise<void> {
     batch.update(doc(db, COL, id), { eliminada: false, eliminadaEn: null, eliminadaPor: null })
   );
 }
-
-export { addDays };

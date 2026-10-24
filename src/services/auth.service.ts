@@ -1,5 +1,4 @@
 import {
-  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signOut as firebaseSignOut,
@@ -19,12 +18,6 @@ export interface AppUser {
 const UID_STORAGE_KEY = "sinpresion_uid";
 const PIN_HASH_KEY = "sinpresion_pin_hash";
 const PIN_SALT_KEY = "sinpresion_pin_salt";
-
-// --- Login inicial por correo y contraseña ---
-export async function loginWithEmail(email: string, password: string): Promise<AppUser> {
-  const credential = await signInWithEmailAndPassword(auth, email, password);
-  return fetchAppUser(credential.user.uid);
-}
 
 // --- Registro de una cuenta nueva ---
 export async function registerWithEmail(
@@ -46,10 +39,6 @@ export async function registerWithEmail(
   });
 
   return appUser;
-}
-
-export function isEmailVerified(): boolean {
-  return auth.currentUser?.emailVerified ?? false;
 }
 
 // --- Consultar el perfil (role, name) desde Firestore ---
