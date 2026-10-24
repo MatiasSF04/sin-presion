@@ -1,0 +1,110 @@
+.pagina {
+  min-height: 100svh;
+  max-width: var(--ancho-contenido);
+  margin: 0 auto;
+  padding: var(--espacio-5) var(--espacio-5) 100px;
+}
+
+.tituloSeccion {
+  margin-bottom: var(--espacio-2);
+  font-size: var(--texto-lg);
+}
+
+.seccion {
+  margin: var(--espacio-6) 0 var(--espacio-2);
+  font-size: var(--texto-lg);
+}
+
+.texto {
+  margin-bottom: var(--espacio-3);
+  color: var(--color-texto-secundario);
+}
+
+.mensaje {
+  margin-bottom: var(--espacio-4);
+  color: var(--color-texto-secundario);
+}
+
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+}
+
+.etiqueta {
+  display: block;
+  margin-top: var(--espacio-3);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--color-texto-secundario);
+}
+
+.campo {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--tamano-toque);
+  margin-top: var(--espacio-2);
+  padding: var(--espacio-3) var(--espacio-4);
+  font-size: var(--texto-base);
+  border-radius: var(--radio-boton);
+  border: 1.5px solid var(--color-borde);
+  background: var(--color-fondo);
+}
+
+.campo[aria-invalid="true"] {
+  border-color: var(--color-emergencia);
+}
+
+.tituloSigno {
+  font-size: var(--texto-base);
+}
+
+/* Cada campo de un signo (ej. sistólica) con sus dos extremos. */
+.meta {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.metaFila {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: var(--espacio-3);
+}
+
+.metaCampo {
+  display: block;
+  min-width: 0;
+  margin-top: var(--espacio-2);
+}
+
+.metaEtiqueta {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.unidad {
+  min-height: var(--tamano-toque);
+  display: flex;
+  align-items: center;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.errorCampo {
+  margin-top: var(--espacio-1);
+  font-size: var(--texto-sm);
+  color: var(--color-emergencia);
+}
+
+.error {
+  margin: var(--espacio-4) 0;
+  color: var(--color-emergencia);
+}
+
+.ok {
+  margin: var(--espacio-4) 0;
+  color: var(--color-exito);
+  font-weight: var(--peso-medio);
+}

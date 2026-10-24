@@ -30,6 +30,9 @@ export function CaregiverHomePage() {
           <Boton bloque onClick={() => navigate("/caregiver/tasks")}>
             Ver tareas de hoy
           </Boton>
+          <Boton variante="secundario" bloque className={s.botonSiguiente} onClick={() => navigate("/caregiver/perfil")}>
+            Perfil y metas
+          </Boton>
         </>
       )}
     </div>

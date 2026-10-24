@@ -5,6 +5,8 @@ import {
   ajustarAlControl, describirRango, formatearNumero, notaRangoOptimo, parsearNumero, type ResultadoMedicion,
 } from "../../services/vitals.logic";
 import { useAuth } from "../../context/useAuth";
+import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
+import { aplicarMetas } from "../../services/perfil.logic";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Boton } from "../../components/base/Boton";
 import { Tarjeta } from "../../components/base/Tarjeta";
@@ -16,6 +18,9 @@ export function VitalsEntryPage() {
   const { type } = useParams<{ type: string }>();
   const { appUser } = useAuth();
   const config = getVitalTypeConfig(type ?? "");
+  // metas que configuró su cuidador; mientras no existan se usan los rangos sugeridos
+  const { perfil } = usePerfilAdulto(appUser?.uid);
+  const metasDelTipo = config ? perfil.metas[config.type] : undefined;
 
   const [values, setValues] = useState<Record<string, number>>(
     () =>
@@ -75,7 +80,7 @@ export function VitalsEntryPage() {
     setSaving(true);
     setErrorGuardar(null);
     try {
-      const r = await addVitalReading(elderUid, config!.type, finales, "manual");
+      const r = await addVitalReading(elderUid, config!.type, finales, "manual", metasDelTipo);
       setValues(finales);
       setResultado(r);
     } catch (err) {
@@ -88,8 +93,10 @@ export function VitalsEntryPage() {
 
   const estilo = { "--color-icono": config.colorLight } as CSSProperties;
 
+  const campos = aplicarMetas(config.fields, metasDelTipo);
+
   if (resultado) {
-    const fuera = config.fields.filter((f) => resultado.camposFuera.includes(f.key));
+    const fuera = campos.filter((f) => resultado.camposFuera.includes(f.key));
     return (
       <div className={s.pagina} style={estilo}>
         <EncabezadoPagina titulo={config.label} subtitulo="Medición guardada" icono={config.icon} />
@@ -116,7 +123,7 @@ export function VitalsEntryPage() {
     );
   }
 
-  const nota = notaRangoOptimo(config.fields);
+  const nota = notaRangoOptimo(campos);
 
   return (
     <div className={s.pagina} style={estilo}>

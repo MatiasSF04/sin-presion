@@ -5,3 +5,7 @@
   margin: 0 auto;
   font-size: var(--texto-base);
 }
+
+.botonSiguiente {
+  margin-top: var(--espacio-3);
+}

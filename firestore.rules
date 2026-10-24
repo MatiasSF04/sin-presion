@@ -52,6 +52,25 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- perfil del adulto mayor (lo configura su cuidador) ----------
+    // id del documento = elderUid. Margen de aviso, metas de signos vitales y contacto de emergencia.
+    match /perfilesAdulto/{elderUid} {
+      allow read: if puedeVer(elderUid);
+      allow create, update: if esCuidadorDe(elderUid)
+        && request.resource.data.keys().hasOnly(
+             ['margenAvisoMin', 'metas', 'contactoEmergencia', 'actualizadoPor', 'actualizadoEn'])
+        && request.resource.data.margenAvisoMin is int
+        && request.resource.data.margenAvisoMin >= 5 && request.resource.data.margenAvisoMin <= 120
+        && request.resource.data.metas is map
+        && (request.resource.data.contactoEmergencia == null
+            || (request.resource.data.contactoEmergencia is map
+                && request.resource.data.contactoEmergencia.telefono is string
+                && request.resource.data.contactoEmergencia.telefono.matches('^[+]?[0-9]{8,15}$')))
+        && request.resource.data.actualizadoPor == request.auth.uid
+        && request.resource.data.actualizadoEn == request.time;
+      allow delete: if false;
+    }
+
     // ---------- vinculación ----------
     // el id del documento es el código de 6 dígitos
     match /codigosVinculo/{codigo} {

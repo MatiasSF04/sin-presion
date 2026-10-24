@@ -2,6 +2,7 @@ import { collection, addDoc, Timestamp, query, where, orderBy, limit, getDocs, }
 import { db } from "./firebase";
 import type { VitalReading } from "../types";
 import { evaluarMedicion, type RangoOptimo } from "./vitals.logic";
+import { aplicarMetas, type MetaCampo } from "./perfil.logic";
 
 export type VitalType = VitalReading["type"];
 
@@ -119,11 +120,14 @@ export async function addVitalReading(
   elderUid: string,
   type: VitalType,
   value: Record<string, number>,
-  source: "manual" | "device" = "manual"
+  source: "manual" | "device" = "manual",
+  /** Metas del cuidador para este tipo (perfil del adulto mayor); sin ellas se usan los rangos sugeridos. */
+  metasDelTipo?: Record<string, MetaCampo>
 ) {
   if (!elderUid) throw new Error("elderUid requerido para registrar una medición");
   // se guarda el resultado para que el cuidador (resumen y avisos) no tenga que recalcularlo
-  const { enRango, camposFuera } = evaluarMedicion(getVitalTypeConfig(type)?.fields ?? [], value);
+  const campos = aplicarMetas(getVitalTypeConfig(type)?.fields ?? [], metasDelTipo);
+  const { enRango, camposFuera } = evaluarMedicion(campos, value);
   await addDoc(collection(db, "vitalReadings"), {
     elderUid,
     type,

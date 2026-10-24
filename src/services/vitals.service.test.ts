@@ -82,6 +82,15 @@ describe('addVitalReading: registro correcto', () => {
     expect(addDocMock.mock.calls[0][1]).toMatchObject({ fueraDeRango: true, camposFueraDeRango: ['sistolica'] });
   });
 
+  it('usa las metas del cuidador en vez de los rangos sugeridos', async () => {
+    // 135 está fuera del sugerido (90-120) pero dentro de la meta personalizada (100-140)
+    const r = await addVitalReading(ELDER, 'presion', { sistolica: 135, diastolica: 78, pulso: 70 }, 'manual', {
+      sistolica: { min: 100, max: 140 },
+    });
+    expect(r).toEqual({ enRango: true, camposFuera: [] });
+    expect(addDocMock.mock.calls[0][1]).toMatchObject({ fueraDeRango: false });
+  });
+
   it('marca source = "device" cuando el registro viene del BLE', async () => {
     await addVitalReading(ELDER, 'presion', { sistolica: 118, diastolica: 76, pulso: 68 }, 'device');
     expect(addDocMock.mock.calls[0][1].source).toBe('device');
