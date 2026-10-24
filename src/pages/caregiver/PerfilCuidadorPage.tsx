@@ -245,7 +245,7 @@ function FormularioPerfil({ elderUid, cuidadorUid, nombreCuidador, nombreAdulto,
               );
             })}
             {personalizado && (
-              <Boton variante="enlace" onClick={() => usarSugeridos(tipo.type)}>
+              <Boton variante="secundario" bloque className={s.usarSugeridos} onClick={() => usarSugeridos(tipo.type)}>
                 Usar valores sugeridos
               </Boton>
             )}
