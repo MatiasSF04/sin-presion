@@ -156,13 +156,19 @@ export function TareasCuidadorPage() {
       {errorAccion && <p className={s.error} role="alert">{errorAccion}</p>}
 
       <Tarjeta variante="suave">
-        <div className={s.resumenFila}>
-          <strong>{progreso.done} de {progreso.total} completadas</strong>
-          <span>{progreso.pct}%</span>
-        </div>
-        <div className={s.barra}>
-          <BarraProgreso porcentaje={progreso.pct} etiqueta="Tareas completadas hoy" />
-        </div>
+        {loading || vinculo.tipo === "cargando" ? (
+          <p className={s.mensaje}>Cargando…</p>
+        ) : (
+          <>
+            <div className={s.resumenFila}>
+              <strong>{progreso.done} de {progreso.total} completadas</strong>
+              <span>{progreso.pct}%</span>
+            </div>
+            <div className={s.barra}>
+              <BarraProgreso porcentaje={progreso.pct} etiqueta="Tareas completadas hoy" />
+            </div>
+          </>
+        )}
       </Tarjeta>
 
       {editando ? (

@@ -97,6 +97,8 @@ export function VitalsEntryPage() {
 
   if (resultado) {
     const fuera = campos.filter((f) => resultado.camposFuera.includes(f.key));
+    // pasos (y cualquier signo sin rango óptimo): no se dice "dentro del rango"
+    const tieneRango = campos.some((f) => f.optimo);
     return (
       <div className={s.pagina} style={estilo}>
         <EncabezadoPagina titulo={config.label} subtitulo="Medición guardada" icono={config.icon} />
@@ -106,7 +108,7 @@ export function VitalsEntryPage() {
           className={unirClases(s.resultado, resultado.enRango ? s.resultadoEnRango : s.resultadoFuera)}
         >
           <p className={s.resultadoTitulo}>
-            {resultado.enRango ? "✓ Dentro del rango óptimo" : "Fuera del rango óptimo"}
+            {!tieneRango ? "✓ Medición guardada" : resultado.enRango ? "✓ Dentro del rango óptimo" : "Fuera del rango óptimo"}
           </p>
           {fuera.map((f) => (
             <p key={f.key} className={s.resultadoDetalle}>

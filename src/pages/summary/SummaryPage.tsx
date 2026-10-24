@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/useAuth";
+import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
+import { estadoMedicion } from "../../services/resumen.logic";
+import type { MetasSignos } from "../../services/perfil.logic";
 import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
 import { computeWeeklyAdherence } from "../../services/tasks.logic";
 import {
@@ -58,27 +61,23 @@ function formatValue(reading: StoredVitalReading): string {
   }
 }
 
-type Tono = "exito" | "info" | "emergencia";
+type Tono = "exito" | "advertencia";
 
-function statusBadge(reading: StoredVitalReading): { label: string; tono: Tono } | null {
-  if (reading.type === "presion") {
-    const { sistolica, diastolica } = reading.value;
-    if (sistolica <= 120 && diastolica <= 80) return { label: "Óptima", tono: "exito" };
-    if (sistolica <= 139 && diastolica <= 89) return { label: "Normal", tono: "info" };
-    return { label: "Alta", tono: "emergencia" };
-  }
-  if (reading.type === "temperatura") {
-    const t = reading.value.valor;
-    if (t >= 36 && t <= 37.5) return { label: "Normal", tono: "exito" };
-    return { label: t > 37.5 ? "Fiebre" : "Baja", tono: "emergencia" };
-  }
-  return null;
+/**
+ * Misma evaluación que al registrar y que ve el cuidador: rango sugerido o meta del perfil.
+ * La app no diagnostica, por eso solo dice "En rango" o "Fuera de rango". Sin rango (pasos) no hay insignia.
+ */
+function statusBadge(reading: StoredVitalReading, metas: MetasSignos): { label: string; tono: Tono } | null {
+  const signo = VITAL_TYPES.find((v) => v.type === reading.type);
+  if (!signo || !signo.fields.some((f) => f.optimo)) return null;
+  return estadoMedicion(reading, signo, metas).fuera
+    ? { label: "Fuera de rango", tono: "advertencia" }
+    : { label: "En rango", tono: "exito" };
 }
 
 const CLASE_TONO: Record<Tono, string> = {
   exito: s.insigniaExito,
-  info: s.insigniaInfo,
-  emergencia: s.insigniaEmergencia,
+  advertencia: s.insigniaAdvertencia,
 };
 
 const iconByType: Record<string, string> = {
@@ -96,6 +95,7 @@ const CHART_HEIGHT = 140;
 export function SummaryPage() {
   const { appUser } = useAuth();
   const { tasks } = useUpcomingTasks(appUser?.uid);
+  const { perfil } = usePerfilAdulto(appUser?.uid);
   const [readings, setReadings] = useState<StoredVitalReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -273,7 +273,7 @@ export function SummaryPage() {
               <p className={s.vacio}>Aún no has registrado ninguna medición.</p>
             ) : (
               recentList.map((r) => {
-                const badge = statusBadge(r);
+                const badge = statusBadge(r, perfil.metas);
                 return (
                   <div key={r.id} className={s.fila}>
                     <span className={s.filaIcono} aria-hidden="true">{iconByType[r.type] ?? "•"}</span>

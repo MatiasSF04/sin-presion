@@ -148,3 +148,4 @@
 .insigniaExito { color: var(--color-exito); background: var(--color-exito-suave); }
 .insigniaInfo { color: var(--color-info); background: var(--color-info-suave); }
 .insigniaEmergencia { color: var(--color-emergencia); background: var(--color-emergencia-suave); }
+.insigniaAdvertencia { color: var(--color-advertencia-texto); background: var(--color-advertencia-suave); }
