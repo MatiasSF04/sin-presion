@@ -108,3 +108,44 @@ export function formatearMomento(fecha: Date, ahora: Date): string {
   if (diferencia === 1) return `ayer ${hora}`;
   return `${dosDigitos(fecha.getDate())}/${dosDigitos(fecha.getMonth() + 1)} ${hora}`;
 }
+
+/** "Hoy", "Ayer" o "22/10" (día local del teléfono). */
+export function etiquetaDia(fecha: Date, ahora: Date): string {
+  const momento = formatearMomento(fecha, ahora);
+  if (momento.startsWith("hoy")) return "Hoy";
+  if (momento.startsWith("ayer")) return "Ayer";
+  return momento.split(" ")[0];
+}
+
+export interface MedicionDelDia<M extends MedicionResumen> {
+  medicion: M;
+  signo: SignoResumen | undefined;
+  fuera: boolean;
+  camposFuera: string[];
+}
+
+/**
+ * Mediciones de los últimos `dias` días agrupadas por día (el más reciente primero),
+ * cada una con su estado dentro o fuera de rango. Para la pantalla de mediciones del cuidador.
+ */
+export function medicionesPorDia<M extends MedicionResumen>(
+  mediciones: M[],
+  signos: SignoResumen[],
+  metas: MetasSignos,
+  ahora: Date,
+  dias = DIAS_FUERA_DE_RANGO
+): { dia: string; mediciones: MedicionDelDia<M>[] }[] {
+  const desde = new Date(ahora.getTime() - dias * 24 * 60 * 60 * 1000);
+  const grupos: { dia: string; mediciones: MedicionDelDia<M>[] }[] = [];
+  [...mediciones]
+    .filter((m) => m.recordedAt >= desde)
+    .sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime())
+    .forEach((m) => {
+      const signo = signos.find((s) => s.type === m.type);
+      const dia = etiquetaDia(m.recordedAt, ahora);
+      let grupo = grupos[grupos.length - 1];
+      if (!grupo || grupo.dia !== dia) grupos.push((grupo = { dia, mediciones: [] }));
+      grupo.mediciones.push({ medicion: m, signo, ...estadoMedicion(m, signo, metas) });
+    });
+  return grupos;
+}

@@ -5,6 +5,7 @@ import {
   fueraDeRangoRecientes,
   formatearValor,
   formatearMomento,
+  medicionesPorDia,
   type MedicionResumen,
   type SignoResumen,
 } from "./resumen.logic";
@@ -85,5 +86,25 @@ describe("textos", () => {
     expect(formatearMomento(new Date(2026, 9, 24, 9, 5), ahora)).toBe("hoy 09:05");
     expect(formatearMomento(new Date(2026, 9, 23, 22, 40), ahora)).toBe("ayer 22:40");
     expect(formatearMomento(new Date(2026, 9, 20, 8, 0), ahora)).toBe("20/10 08:00");
+  });
+});
+
+describe("medicionesPorDia", () => {
+  it("agrupa los últimos 7 días por día, la más reciente primero, con su estado", () => {
+    const r = medicionesPorDia(
+      [
+        med("ayer", "sueno", { horas: 4 }, 14, { fueraDeRango: true, camposFueraDeRango: ["horas"] }), // 23/10 22:00
+        med("hoy-1", "presion", { sistolica: 115, diastolica: 75 }, 3), // hoy 09:00
+        med("hoy-2", "sueno", { horas: 7 }, 1, { fueraDeRango: false }), // hoy 11:00
+        med("vieja", "sueno", { horas: 7 }, 24 * 9),
+      ],
+      signos,
+      {},
+      ahora
+    );
+    expect(r.map((g) => [g.dia, g.mediciones.map((x) => [x.medicion.id, x.fuera])])).toEqual([
+      ["Hoy", [["hoy-2", false], ["hoy-1", false]]],
+      ["Ayer", [["ayer", true]]],
+    ]);
   });
 });
