@@ -5,6 +5,8 @@ import { useAdultoVinculado } from "../../hooks/useAdultoVinculado";
 import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
 import { useMedicionesRecientes } from "../../hooks/useMedicionesRecientes";
 import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
+import { useEventosSos } from "../../hooks/useEventosSos";
+import { sosReciente } from "../../services/sos.logic";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Tarjeta } from "../../components/base/Tarjeta";
 import { Boton } from "../../components/base/Boton";
@@ -14,12 +16,13 @@ import { VITAL_TYPES } from "../../services/vitals.service";
 import {
   computeDayProgress, computeWeeklyAdherence, estaAtrasada, toISODate,
 } from "../../services/tasks.logic";
-import {
-  DIAS_FUERA_DE_RANGO, estadoMedicion, formatearMomento, formatearValor, fueraDeRangoRecientes, ultimasPorSigno,
-} from "../../services/resumen.logic";
+import { DIAS_FUERA_DE_RANGO, formatearMomento, fueraDeRangoRecientes } from "../../services/resumen.logic";
 import s from "./CaregiverHomePage.module.css";
 
-/** Inicio del cuidador: resumen en vivo del cumplimiento y de las mediciones de su adulto mayor. */
+/**
+ * Inicio del cuidador: resumen en vivo (tareas de hoy, adherencia y mediciones fuera de rango)
+ * y, juntos, los tres accesos: tareas, mediciones y perfil.
+ */
 export function CaregiverHomePage() {
   const navigate = useNavigate();
   const { appUser } = useAuth();
@@ -29,9 +32,10 @@ export function CaregiverHomePage() {
   const { tasks, loading: cargandoTareas } = useUpcomingTasks(elderUid, { programarRecordatorios: false });
   const { mediciones, cargando: cargandoMediciones, error: errorMediciones } = useMedicionesRecientes(elderUid);
   const { perfil } = usePerfilAdulto(elderUid);
+  const eventosSos = useEventosSos(elderUid);
   const [ahora, setAhora] = useState(new Date());
 
-  // refresca atrasadas y "hoy/ayer" cada minuto
+  // refresca las atrasadas cada minuto
   useEffect(() => {
     const id = setInterval(() => setAhora(new Date()), 60_000);
     return () => clearInterval(id);
@@ -44,8 +48,8 @@ export function CaregiverHomePage() {
   const progreso = computeDayProgress(tasks, hoy);
   const semana = computeWeeklyAdherence(tasks, ahora);
   const atrasadas = tasks.filter((t) => t.dueDate === hoy && estaAtrasada(t, ahora)).length;
-  const fuera = fueraDeRangoRecientes(mediciones, VITAL_TYPES, perfil.metas, ahora);
-  const ultimas = ultimasPorSigno(mediciones, VITAL_TYPES);
+  const fuera = fueraDeRangoRecientes(mediciones, VITAL_TYPES, perfil.metas, ahora).length;
+  const sos = sosReciente(eventosSos, ahora);
 
   return (
     <div className={s.pagina}>
@@ -58,6 +62,17 @@ export function CaregiverHomePage() {
 
       {vinculo.tipo === "vinculado" && (
         <>
+          {/* ---------- emergencia en las últimas 24 h: lo primero que se ve ---------- */}
+          {sos && (
+            <div className={s.sos} role="alert">
+              <p className={s.sosTitulo}>🚨 {nombre} usó el botón de emergencia</p>
+              <p>
+                {formatearMomento(sos.creadoEn, ahora)} · llamó a {sos.esContacto ? sos.nombreContacto : "SAMU (131)"}
+                {sos.esContacto && ` (${sos.telefono})`}
+              </p>
+            </div>
+          )}
+
           {/* ---------- tareas de hoy ---------- */}
           <Tarjeta>
             <h2 className={s.tituloSeccion}>Tareas de hoy</h2>
@@ -89,69 +104,32 @@ export function CaregiverHomePage() {
                 </p>
               </>
             )}
-            <Boton bloque className={s.accion} onClick={() => navigate("/caregiver/tasks")}>
-              Ver tareas de hoy
-            </Boton>
           </Tarjeta>
 
+          {/* ---------- mediciones fuera de rango (resumen) ---------- */}
           {errorMediciones && (
             <p className={s.error} role="alert">No se pudieron cargar las mediciones: {errorMediciones}</p>
           )}
-
-          {/* ---------- mediciones fuera de rango ---------- */}
-          <h2 className={s.seccion}>Fuera de rango · últimos {DIAS_FUERA_DE_RANGO} días</h2>
-          {cargandoMediciones ? (
-            <p className={s.mensaje}>Cargando…</p>
-          ) : fuera.length === 0 ? (
-            <p className={unirClases(s.aviso, s.avisoBien)}>✓ Ninguna medición fuera de rango</p>
-          ) : (
-            <ul className={s.lista}>
-              {fuera.map(({ medicion, signo, camposFuera }) => (
-                <li key={medicion.id} className={unirClases(s.aviso, s.avisoFuera)}>
-                  <span className={s.avisoTitulo}>
-                    <span aria-hidden="true">{signo?.icon}</span> {signo?.label ?? medicion.type}
-                  </span>
-                  <span>{signo ? formatearValor(signo, medicion.value, camposFuera) : ""}</span>
-                  <span className={s.momento}>{formatearMomento(medicion.recordedAt, ahora)}</span>
-                </li>
-              ))}
-            </ul>
+          {!cargandoMediciones && !errorMediciones && (
+            <p className={unirClases(s.aviso, fuera > 0 ? s.avisoFuera : s.avisoBien)} role="status">
+              {fuera === 0
+                ? `✓ Ninguna medición fuera de rango en ${DIAS_FUERA_DE_RANGO} días`
+                : `${fuera === 1 ? "1 medición" : `${fuera} mediciones`} fuera de rango en ${DIAS_FUERA_DE_RANGO} días`}
+            </p>
           )}
 
-          {/* ---------- última medición de cada signo ---------- */}
-          <h2 className={s.seccion}>Últimas mediciones</h2>
-          {!cargandoMediciones && (
-            <div className={s.grilla}>
-              {ultimas.map(({ signo, medicion }) => {
-                const estado = medicion ? estadoMedicion(medicion, signo, perfil.metas) : null;
-                const tieneRango = signo.fields.some((f) => f.optimo);
-                return (
-                  <div key={signo.type} className={unirClases(s.signo, estado?.fuera && s.signoFuera)}>
-                    <span className={s.signoNombre}>
-                      <span aria-hidden="true">{signo.icon}</span> {signo.label}
-                    </span>
-                    {medicion ? (
-                      <>
-                        <span className={s.signoValor}>{formatearValor(signo, medicion.value)}</span>
-                        <span className={s.momento}>{formatearMomento(medicion.recordedAt, ahora)}</span>
-                        {tieneRango && (
-                          <span className={estado?.fuera ? s.etiquetaFuera : s.etiquetaBien}>
-                            {estado?.fuera ? "Fuera de rango" : "En rango"}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className={s.momento}>Sin registros</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <Boton variante="secundario" bloque className={s.botonSiguiente} onClick={() => navigate("/caregiver/perfil")}>
-            Perfil y metas
-          </Boton>
+          {/* ---------- accesos, juntos ---------- */}
+          <nav className={s.accesos} aria-label="Accesos del cuidador">
+            <Boton bloque onClick={() => navigate("/caregiver/tasks")}>
+              Ver tareas de hoy
+            </Boton>
+            <Boton bloque onClick={() => navigate("/caregiver/mediciones")}>
+              Últimas mediciones
+            </Boton>
+            <Boton variante="secundario" bloque onClick={() => navigate("/caregiver/perfil")}>
+              Perfil y metas
+            </Boton>
+          </nav>
         </>
       )}
     </div>

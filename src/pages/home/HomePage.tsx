@@ -5,6 +5,11 @@ import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
 import { ReminderBanner } from "../../components/shared/ReminderBanner";
 import { computeDayProgress, toISODate } from "../../services/tasks.logic";
 import { BarraProgreso } from "../../components/base/BarraProgreso";
+import { Dialogo } from "../../components/base/Dialogo";
+import { Boton } from "../../components/base/Boton";
+import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
+import { destinoSos, enlaceLlamada } from "../../services/sos.logic";
+import { registrarSos } from "../../services/sos.service";
 import s from "./HomePage.module.css";
 
 interface HomeCard {
@@ -21,6 +26,10 @@ export function HomePage() {
   const { appUser } = useAuth();
   const { tasks } = useUpcomingTasks(appUser?.uid);
   const [now, setNow] = useState(new Date());
+  // contacto de emergencia que guardó su cuidador; sin contacto, el 131
+  const { perfil } = usePerfilAdulto(appUser?.uid);
+  const destino = destinoSos(perfil.contactoEmergencia);
+  const [confirmandoSos, setConfirmandoSos] = useState(false);
 
   // refresca el banner y el progreso cada minuto
   useEffect(() => {
@@ -32,10 +41,18 @@ export function HomePage() {
   const todays = tasks.filter((t) => t.dueDate === today);
   const progress = computeDayProgress(tasks, today);
 
+  /** Primero se confirma: evita llamadas por un toque accidental. */
   function handleEmergency() {
-    // TODO: reemplazar el número fijo por el contacto de emergencia guardado en el perfil
-    // y registrar el evento en Firestore vía sos.service.ts (colección sosEvents)
-    window.location.href = "tel:131";
+    setConfirmandoSos(true);
+  }
+
+  function llamar() {
+    setConfirmandoSos(false);
+    // la llamada va primero; el registro (trazabilidad) se completa en segundo plano
+    if (appUser) {
+      registrarSos(appUser.uid, destino).catch((e) => console.error("No se pudo registrar el SOS", e));
+    }
+    window.location.href = enlaceLlamada(destino.telefono);
   }
 
   const cards: HomeCard[] = [
@@ -123,6 +140,24 @@ export function HomePage() {
           ))}
         </nav>
       </main>
+
+      <Dialogo
+        abierto={confirmandoSos}
+        titulo={destino.esContacto ? `¿Llamar a ${destino.nombre}?` : "¿Llamar al SAMU (131)?"}
+        descripcion={
+          destino.esContacto
+            ? `Se llamará al ${destino.telefono}.`
+            : "Tu cuidador aún no guardó un contacto de emergencia."
+        }
+        onCerrar={() => setConfirmandoSos(false)}
+      >
+        <Boton variante="emergencia" bloque onClick={llamar}>
+          📞 Llamar
+        </Boton>
+        <Boton variante="secundario" bloque onClick={() => setConfirmandoSos(false)}>
+          Cancelar
+        </Boton>
+      </Dialogo>
     </div>
   );
 }
