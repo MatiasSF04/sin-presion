@@ -71,6 +71,17 @@ describe('addVitalReading: registro correcto', () => {
     },
   );
 
+  it('marca fueraDeRango = false si la medición está en el rango óptimo', async () => {
+    const r = await addVitalReading(ELDER, 'sueno', { horas: 7 }, 'manual');
+    expect(r).toEqual({ enRango: true, camposFuera: [] });
+    expect(addDocMock.mock.calls[0][1]).toMatchObject({ fueraDeRango: false, camposFueraDeRango: [] });
+  });
+
+  it('marca fueraDeRango = true y los campos que quedaron fuera', async () => {
+    await addVitalReading(ELDER, 'presion', { sistolica: 150, diastolica: 78, pulso: 70 }, 'manual');
+    expect(addDocMock.mock.calls[0][1]).toMatchObject({ fueraDeRango: true, camposFueraDeRango: ['sistolica'] });
+  });
+
   it('marca source = "device" cuando el registro viene del BLE', async () => {
     await addVitalReading(ELDER, 'presion', { sistolica: 118, diastolica: 76, pulso: 68 }, 'device');
     expect(addDocMock.mock.calls[0][1].source).toBe('device');
@@ -105,6 +116,12 @@ describe('getVitalTypeConfig: configuración por tipo', () => {
         expect(f.default).toBeGreaterThanOrEqual(f.min);
         expect(f.default).toBeLessThanOrEqual(f.max);
         expect(f.step).toBeGreaterThan(0);
+        // el rango óptimo debe caber dentro de lo que permite registrar el control
+        if (f.optimo) {
+          expect(f.optimo.min).toBeGreaterThanOrEqual(f.min);
+          expect(f.optimo.max).toBeLessThanOrEqual(f.max);
+          expect(f.optimo.min).toBeLessThan(f.optimo.max);
+        }
       }
     }
   });
@@ -120,4 +137,4 @@ describe('Latencia del registro (apoyo a OE3)', () => {
     await addVitalReading(ELDER, 'presion', { sistolica: 120, diastolica: 80, pulso: 70 }, 'manual');
     expect(performance.now() - t0).toBeLessThan(1000);
   });
-});
+});

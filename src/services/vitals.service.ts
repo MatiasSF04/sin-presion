@@ -1,6 +1,7 @@
 import { collection, addDoc, Timestamp, query, where, orderBy, limit, getDocs, } from "firebase/firestore";
 import { db } from "./firebase";
 import type { VitalReading } from "../types";
+import { evaluarMedicion, type RangoOptimo } from "./vitals.logic";
 
 export type VitalType = VitalReading["type"];
 
@@ -12,6 +13,11 @@ interface VitalFieldConfig {
   max: number;
   step: number;
   default: number;
+  /**
+   * Rango óptimo por defecto (feedback del 23 oct 2026). min/max de arriba son solo los límites
+   * del control, que permiten registrar todo el rango; fuera del óptimo se marca la medición.
+   */
+  optimo?: RangoOptimo;
 }
 
 export interface VitalTypeConfig {
@@ -22,7 +28,6 @@ export interface VitalTypeConfig {
   color: string;
   colorLight: string;
   fields: VitalFieldConfig[];
-  normalRangeNote?: string;
 }
 
 export const VITAL_TYPES: VitalTypeConfig[] = [
@@ -33,11 +38,16 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     color: "var(--color-emergencia)",
     colorLight: "var(--color-emergencia-suave)",
     fields: [
-      { key: "sistolica", label: "Sistólica", unit: "mmHg", min: 60, max: 220, step: 1, default: 120 },
-      { key: "diastolica", label: "Diastólica", unit: "mmHg", min: 40, max: 140, step: 1, default: 80 },
+      {
+        key: "sistolica", label: "Sistólica", unit: "mmHg", min: 60, max: 220, step: 1, default: 120,
+        optimo: { min: 90, max: 120 },
+      },
+      {
+        key: "diastolica", label: "Diastólica", unit: "mmHg", min: 40, max: 140, step: 1, default: 80,
+        optimo: { min: 60, max: 80 },
+      },
       { key: "pulso", label: "Pulso", unit: "ppm", min: 30, max: 200, step: 1, default: 72 },
     ],
-    normalRangeNote: "Presión normal: Sistólica 90–120 mmHg · Diastólica 60–80 mmHg",
   },
   {
     type: "temperatura",
@@ -45,7 +55,12 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     icon: "🌡️",
     color: "var(--color-advertencia)",
     colorLight: "var(--color-advertencia-suave)",
-    fields: [{ key: "valor", label: "Temperatura", unit: "°C", min: 34, max: 42, step: 0.1, default: 36.5 }],
+    fields: [
+      {
+        key: "valor", label: "Temperatura", unit: "°C", min: 34, max: 42, step: 0.1, default: 36.5,
+        optimo: { min: 35.2, max: 37, minExclusivo: true, maxExclusivo: true },
+      },
+    ],
   },
   {
     type: "sueno",
@@ -53,7 +68,12 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     icon: "🌙",
     color: "var(--color-info)",
     colorLight: "var(--color-info-suave)",
-    fields: [{ key: "horas", label: "Horas dormidas", unit: "h", min: 0, max: 14, step: 0.5, default: 7 }],
+    fields: [
+      {
+        key: "horas", label: "Horas dormidas", unit: "h", min: 0, max: 14, step: 0.5, default: 7,
+        optimo: { min: 6, max: 12 },
+      },
+    ],
   },
   {
     type: "azucar",
@@ -61,7 +81,12 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     icon: "💧",
     color: "var(--color-advertencia)",
     colorLight: "var(--color-advertencia-suave)",
-    fields: [{ key: "valor", label: "Glicemia", unit: "mg/dL", min: 40, max: 400, step: 1, default: 100 }],
+    fields: [
+      {
+        key: "valor", label: "Glicemia", unit: "mg/dL", min: 40, max: 400, step: 1, default: 100,
+        optimo: { min: 60, max: 300 },
+      },
+    ],
   },
   {
     type: "pasos",
@@ -77,7 +102,12 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     icon: "🥤",
     color: "var(--color-primario)",
     colorLight: "var(--color-primario-suave)",
-    fields: [{ key: "vasos", label: "Vasos de agua", unit: "vasos", min: 0, max: 20, step: 1, default: 4 }],
+    fields: [
+      {
+        key: "vasos", label: "Vasos de agua", unit: "vasos", min: 0, max: 20, step: 1, default: 4,
+        optimo: { min: 4, max: 8, detalle: "8 vasos ≈ 2 litros" },
+      },
+    ],
   },
 ];
 
@@ -92,13 +122,18 @@ export async function addVitalReading(
   source: "manual" | "device" = "manual"
 ) {
   if (!elderUid) throw new Error("elderUid requerido para registrar una medición");
+  // se guarda el resultado para que el cuidador (resumen y avisos) no tenga que recalcularlo
+  const { enRango, camposFuera } = evaluarMedicion(getVitalTypeConfig(type)?.fields ?? [], value);
   await addDoc(collection(db, "vitalReadings"), {
     elderUid,
     type,
     value,
     source,
+    fueraDeRango: !enRango,
+    camposFueraDeRango: camposFuera,
     recordedAt: Timestamp.now(),
   });
+  return { enRango, camposFuera };
 }
 
 export interface StoredVitalReading {
@@ -130,4 +165,4 @@ export async function getRecentVitalReadings(
       recordedAt: (data.recordedAt as Timestamp).toDate(),
     };
   });
-}
+}

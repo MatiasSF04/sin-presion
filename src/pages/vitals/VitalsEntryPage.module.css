@@ -4,6 +4,7 @@
 }
 
 .etiquetaCampo {
+  display: block;
   margin-bottom: var(--espacio-3);
   font-size: var(--texto-sm);
   font-weight: var(--peso-medio);
@@ -32,9 +33,24 @@
   align-items: center;
 }
 
+/* Campo editable: al tocarlo se abre el teclado numérico del teléfono. */
 .numero {
+  width: 5.5ch;
+  min-height: var(--tamano-toque);
+  padding: 0;
+  border: none;
+  border-bottom: 2px solid var(--color-borde);
+  background: transparent;
+  color: var(--color-texto);
+  font: inherit;
   font-size: var(--texto-2xl);
   font-weight: var(--peso-fuerte);
+  text-align: center;
+}
+
+.numero:focus {
+  outline: none;
+  border-bottom-color: var(--color-primario);
 }
 
 .unidad {
@@ -49,4 +65,38 @@
   background: var(--color-info-suave);
   font-size: var(--texto-sm);
   text-align: center;
+}
+
+.error {
+  margin-bottom: var(--espacio-4);
+  color: var(--color-emergencia);
+}
+
+/* Resultado al guardar: la app no diagnostica, solo indica dentro o fuera del rango óptimo. */
+.resultado {
+  margin-bottom: var(--espacio-5);
+  padding: var(--espacio-5);
+  border-radius: var(--radio-tarjeta);
+  text-align: center;
+}
+
+.resultadoEnRango {
+  background: var(--color-exito-suave);
+  color: var(--color-exito);
+}
+
+.resultadoFuera {
+  background: var(--color-advertencia-suave);
+  color: var(--color-advertencia-texto);
+}
+
+.resultadoTitulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-fuerte);
+}
+
+.resultadoDetalle {
+  margin-top: var(--espacio-2);
+  font-size: var(--texto-sm);
+  color: var(--color-texto);
 }
