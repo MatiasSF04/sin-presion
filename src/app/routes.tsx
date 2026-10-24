@@ -15,32 +15,12 @@ import { CalendarPage } from "../pages/calendar/CalendarPage";
 import { SettingsPage } from "../pages/settings/SettingsPage";
 
 import { CaregiverHomePage } from "../pages/caregiver/CaregiverHomePage";
-import { CaregiverAlertsPage } from "../pages/caregiver/CaregiverAlertsPage";
 import { TareasCuidadorPage } from "../pages/caregiver/TareasCuidadorPage";
 import { PerfilCuidadorPage } from "../pages/caregiver/PerfilCuidadorPage";
 import { MedicionesCuidadorPage } from "../pages/caregiver/MedicionesCuidadorPage";
 
-// [TEMPORAL] - CAMBIAR esto en false antes de la entrega o el pilotaje.
-// Mientras esté en true, se salta todo el flujo de login/PIN y entra directo a Home.
-const DEV_SKIP_AUTH = false;
-
 export function AppRoutes() {
   const { firebaseReady, appUser, pinExists, pinUnlocked } = useAuth();
-
-  if (DEV_SKIP_AUTH) {
-    return (
-      <Routes>
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/tasks" element={<TasksPage />} />
-        <Route path="/vitals" element={<VitalsSelectPage />} />
-        <Route path="/vitals/:type" element={<VitalsEntryPage />} />
-        <Route path="/summary" element={<SummaryPage />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<Navigate to="/home" replace />} />
-      </Routes>
-    );
-  }
 
   if (!firebaseReady) {
     return <div>Cargando...</div>; // TODO: reemplazar por un spinner con la identidad visual
@@ -79,7 +59,6 @@ export function AppRoutes() {
     return (
       <Routes>
         <Route path="/caregiver" element={<CaregiverHomePage />} />
-        <Route path="/caregiver/alerts" element={<CaregiverAlertsPage />} />
         <Route path="/caregiver/tasks" element={<TareasCuidadorPage />} />
         <Route path="/caregiver/perfil" element={<PerfilCuidadorPage />} />
         <Route path="/caregiver/mediciones" element={<MedicionesCuidadorPage />} />
@@ -101,4 +80,4 @@ export function AppRoutes() {
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );
-}
+}

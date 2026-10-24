@@ -1,75 +1,40 @@
-# React + TypeScript + Vite
+# SIN-PRESIÓN
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Agenda clínica digital para adultos mayores y su cuidador: tareas y recordatorios
+de medicamentos, registro de signos vitales con rangos por persona, botón SOS y un
+panel del cuidador para seguir el cumplimiento.
 
-Currently, two official plugins are available:
+Proyecto de título — Ingeniería en Computación e Informática, Universidad Andrés Bello.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tecnologías
 
-## React Compiler
+- React + TypeScript + Vite, estilos con CSS Modules
+- Firebase: Authentication, Cloud Firestore y Hosting
+- Capacitor (Android) para notificaciones locales y la APK
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Requisitos
 
-## Expanding the ESLint configuration
+- Node.js 24 o superior
+- Firebase CLI (`npm i -g firebase-tools`) para desplegar
+- Archivo `.env` en la raíz con las variables `VITE_FIREBASE_*` (no se versiona)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Comandos
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Comando | Qué hace |
+|---|---|
+| `npm install` | Instala dependencias |
+| `npm run dev` | Servidor de desarrollo |
+| `npm test` | Pruebas automáticas (Vitest) |
+| `npm run lint` | Revisión de estilo (ESLint) |
+| `npm run build` | Compila a `dist/` |
+| `firebase deploy --only hosting` | Publica la app web |
+| `firebase deploy --only firestore:rules,firestore:indexes` | Publica reglas e índices |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Estructura
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+- `src/pages` — pantallas (adulto mayor, cuidador, acceso)
+- `src/components` — componentes reutilizables
+- `src/services` — acceso a Firebase (`*.service.ts`) y lógica pura probada (`*.logic.ts`)
+- `src/hooks` — suscripciones en vivo a Firestore
+- `src/estilos` — tokens y estilos base
+- `firestore.rules` — reglas de acceso por rol
