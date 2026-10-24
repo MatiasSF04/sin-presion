@@ -100,3 +100,28 @@
   font-size: var(--texto-sm);
   color: var(--color-texto);
 }
+
+/* Preguntas del signo (ej. en ayunas / después de comer): dos opciones grandes lado a lado. */
+.opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--espacio-3);
+}
+
+.opcion {
+  min-height: 56px;
+  font-size: var(--texto-base);
+}
+
+.observaciones {
+  width: 100%;
+  min-height: calc(var(--tamano-toque) * 2);
+  padding: var(--espacio-3) var(--espacio-4);
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-boton);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-base);
+  resize: vertical;
+}

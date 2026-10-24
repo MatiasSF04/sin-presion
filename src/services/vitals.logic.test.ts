@@ -7,6 +7,10 @@ import {
   formatearNumero,
   parsearNumero,
   ajustarAlControl,
+  preguntaPendiente,
+  describirDetalle,
+  limpiarObservaciones,
+  type OpcionSigno,
   type CampoEvaluable,
 } from "./vitals.logic";
 
@@ -87,5 +91,35 @@ describe("ingreso con el teclado numérico", () => {
     expect(ajustarAlControl(50, temp)).toBe(42);
     expect(ajustarAlControl(10, { min: 40, max: 400, step: 1 })).toBe(40);
     expect(ajustarAlControl(7.24, { min: 0, max: 14, step: 0.5 })).toBe(7.2);
+  });
+});
+
+describe("opciones y observaciones", () => {
+  const momento: OpcionSigno = {
+    key: "momento",
+    pregunta: "¿Cuándo te mediste?",
+    obligatoria: true,
+    valores: [
+      { valor: "ayunas", etiqueta: "En ayunas", resumen: "en ayunas" },
+      { valor: "postprandial", etiqueta: "Después de comer", resumen: "después de comer" },
+    ],
+  };
+
+  it("exige responder las preguntas obligatorias", () => {
+    expect(preguntaPendiente([momento], {})).toBe("¿Cuándo te mediste?");
+    expect(preguntaPendiente([momento], { momento: "otro" })).toBe("¿Cuándo te mediste?");
+    expect(preguntaPendiente([momento], { momento: "ayunas" })).toBeNull();
+    expect(preguntaPendiente(undefined, {})).toBeNull();
+  });
+
+  it("resume lo elegido para las listas", () => {
+    expect(describirDetalle([momento], { momento: "postprandial" })).toBe("después de comer");
+    expect(describirDetalle([momento], undefined)).toBe("");
+  });
+
+  it("limpia las observaciones y descarta las vacías", () => {
+    expect(limpiarObservaciones("  me sentí mareado  ")).toBe("me sentí mareado");
+    expect(limpiarObservaciones("   ")).toBeUndefined();
+    expect(limpiarObservaciones("a".repeat(600))).toHaveLength(500);
   });
 });

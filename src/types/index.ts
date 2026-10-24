@@ -10,7 +10,7 @@ export interface Task {
 
 export interface VitalReading {
   id: string;
-  type: "presion" | "temperatura" | "sueno" | "azucar" | "pasos" | "hidratacion" | "otro";
+  type: "presion" | "temperatura" | "sueno" | "azucar" | "pasos" | "hidratacion" | "diuresis" | "deposiciones" | "otro";
   value: Record<string, number>;
   recordedAt: string;
   source: "manual" | "device";

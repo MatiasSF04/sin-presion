@@ -1,7 +1,7 @@
 import { collection, addDoc, Timestamp, query, where, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import type { VitalReading } from "../types";
-import { evaluarMedicion, type RangoOptimo } from "./vitals.logic";
+import { evaluarMedicion, limpiarObservaciones, type OpcionSigno, type RangoOptimo } from "./vitals.logic";
 import { aplicarMetas, type MetaCampo } from "./perfil.logic";
 
 export type VitalType = VitalReading["type"];
@@ -29,6 +29,10 @@ export interface VitalTypeConfig {
   color: string;
   colorLight: string;
   fields: VitalFieldConfig[];
+  /** Preguntas de selección que acompañan la medición (ej. glicemia en ayunas o después de comer). */
+  opciones?: OpcionSigno[];
+  /** Muestra un cuadro opcional de observaciones al registrar. */
+  conObservaciones?: boolean;
 }
 
 export const VITAL_TYPES: VitalTypeConfig[] = [
@@ -88,6 +92,18 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
         optimo: { min: 60, max: 300 },
       },
     ],
+    // feedback 23 oct: distinguir ayunas y postprandial (mismo rango por ahora)
+    opciones: [
+      {
+        key: "momento",
+        pregunta: "¿Cuándo te mediste?",
+        obligatoria: true,
+        valores: [
+          { valor: "ayunas", etiqueta: "En ayunas", resumen: "en ayunas" },
+          { valor: "postprandial", etiqueta: "Después de comer", resumen: "después de comer" },
+        ],
+      },
+    ],
   },
   {
     type: "pasos",
@@ -110,6 +126,36 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
       },
     ],
   },
+  // feedback 23 oct: diuresis y deposiciones. Sin rango óptimo hasta que lo definan los profesionales.
+  {
+    type: "diuresis",
+    label: "Diuresis",
+    icon: "🚻",
+    color: "var(--color-info)",
+    colorLight: "var(--color-info-suave)",
+    fields: [{ key: "veces", label: "Veces que orinaste hoy", unit: "veces", min: 0, max: 30, step: 1, default: 5 }],
+    conObservaciones: true,
+  },
+  {
+    type: "deposiciones",
+    label: "Deposiciones",
+    icon: "🧻",
+    color: "var(--color-acento)",
+    colorLight: "var(--color-exito-suave)",
+    fields: [{ key: "veces", label: "Veces hoy", unit: "veces", min: 0, max: 15, step: 1, default: 1 }],
+    opciones: [
+      {
+        key: "normal",
+        pregunta: "¿Fue normal?",
+        obligatoria: true,
+        valores: [
+          { valor: "si", etiqueta: "Sí", resumen: "normal" },
+          { valor: "no", etiqueta: "No", resumen: "no normal" },
+        ],
+      },
+    ],
+    conObservaciones: true,
+  },
 ];
 
 export function getVitalTypeConfig(type: string): VitalTypeConfig | undefined {
@@ -122,12 +168,15 @@ export async function addVitalReading(
   value: Record<string, number>,
   source: "manual" | "device" = "manual",
   /** Metas del cuidador para este tipo (perfil del adulto mayor); sin ellas se usan los rangos sugeridos. */
-  metasDelTipo?: Record<string, MetaCampo>
+  metasDelTipo?: Record<string, MetaCampo>,
+  /** Respuestas a las opciones del signo y observaciones opcionales (solo se guardan si existen). */
+  extras: { detalle?: Record<string, string>; observaciones?: string } = {}
 ) {
   if (!elderUid) throw new Error("elderUid requerido para registrar una medición");
   // se guarda el resultado para que el cuidador (resumen y avisos) no tenga que recalcularlo
   const campos = aplicarMetas(getVitalTypeConfig(type)?.fields ?? [], metasDelTipo);
   const { enRango, camposFuera } = evaluarMedicion(campos, value);
+  const observaciones = limpiarObservaciones(extras.observaciones ?? "");
   await addDoc(collection(db, "vitalReadings"), {
     elderUid,
     type,
@@ -136,6 +185,8 @@ export async function addVitalReading(
     fueraDeRango: !enRango,
     camposFueraDeRango: camposFuera,
     recordedAt: Timestamp.now(),
+    ...(extras.detalle && Object.keys(extras.detalle).length > 0 ? { detalle: extras.detalle } : {}),
+    ...(observaciones ? { observaciones } : {}),
   });
   return { enRango, camposFuera };
 }
@@ -149,6 +200,9 @@ export interface StoredVitalReading {
   /** Resultado guardado al registrar (desde el commit 8). Las mediciones anteriores no lo tienen. */
   fueraDeRango?: boolean;
   camposFueraDeRango?: string[];
+  /** Respuestas a las opciones del signo, p. ej. { momento: "ayunas" }. */
+  detalle?: Record<string, string>;
+  observaciones?: string;
 }
 
 function leerMedicion(id: string, data: Record<string, unknown>): StoredVitalReading {
@@ -160,6 +214,8 @@ function leerMedicion(id: string, data: Record<string, unknown>): StoredVitalRea
     recordedAt: (data.recordedAt as Timestamp).toDate(),
     fueraDeRango: typeof data.fueraDeRango === "boolean" ? data.fueraDeRango : undefined,
     camposFueraDeRango: Array.isArray(data.camposFueraDeRango) ? (data.camposFueraDeRango as string[]) : undefined,
+    detalle: data.detalle && typeof data.detalle === "object" ? (data.detalle as Record<string, string>) : undefined,
+    observaciones: typeof data.observaciones === "string" ? data.observaciones : undefined,
   };
 }
 

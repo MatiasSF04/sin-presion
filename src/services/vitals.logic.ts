@@ -97,3 +97,42 @@ export function ajustarAlControl(valor: number, c: LimitesControl): number {
   const acotado = Math.min(c.max, Math.max(c.min, valor));
   return Number(acotado.toFixed(decimales));
 }
+
+// ---------- opciones y observaciones de una medición ----------
+
+/**
+ * Pregunta de selección que acompaña a una medición, p. ej. glicemia "¿Cuándo te mediste?"
+ * (en ayunas / después de comer) o deposiciones "¿Fue normal?" (sí / no).
+ */
+export interface OpcionSigno {
+  key: string;
+  pregunta: string;
+  valores: { valor: string; etiqueta: string; /** Texto corto para listas: "en ayunas", "no normal". */ resumen: string }[];
+  obligatoria: boolean;
+}
+
+/** Largo máximo de las observaciones (también lo validan las reglas de Firestore). */
+export const MAX_OBSERVACIONES = 500;
+
+/** Primera pregunta obligatoria sin responder, o null si están todas. */
+export function preguntaPendiente(opciones: OpcionSigno[] | undefined, elegidas: Record<string, string>): string | null {
+  const falta = (opciones ?? []).find(
+    (o) => o.obligatoria && !o.valores.some((v) => v.valor === elegidas[o.key])
+  );
+  return falta ? falta.pregunta : null;
+}
+
+/** "en ayunas" · "no normal": resume lo elegido, en el orden de la configuración. */
+export function describirDetalle(opciones: OpcionSigno[] | undefined, detalle: Record<string, string> | undefined): string {
+  if (!opciones || !detalle) return "";
+  return opciones
+    .map((o) => o.valores.find((v) => v.valor === detalle[o.key])?.resumen)
+    .filter((r): r is string => !!r)
+    .join(" · ");
+}
+
+/** Observaciones opcionales: sin espacios sobrantes y con largo máximo; vacías → undefined (no se guardan). */
+export function limpiarObservaciones(texto: string): string | undefined {
+  const limpio = texto.trim().slice(0, MAX_OBSERVACIONES);
+  return limpio === "" ? undefined : limpio;
+}

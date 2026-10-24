@@ -29,7 +29,10 @@ service cloud.firestore {
     // ---------- signos vitales ----------
     match /vitalReadings/{id} {
       allow read: if puedeVer(resource.data.elderUid);
-      allow create: if esYo(request.resource.data.elderUid);   // solo el adulto mayor registra
+      allow create: if esYo(request.resource.data.elderUid)    // solo el adulto mayor registra
+        && (!('observaciones' in request.resource.data)
+            || (request.resource.data.observaciones is string
+                && request.resource.data.observaciones.size() <= 500));
       allow update, delete: if false;                          // historial inmutable
     }
 
@@ -69,6 +72,18 @@ service cloud.firestore {
         && request.resource.data.actualizadoPor == request.auth.uid
         && request.resource.data.actualizadoEn == request.time;
       allow delete: if false;
+    }
+
+    // ---------- botón de emergencia (SOS) ----------
+    // Cada uso queda registrado: lo crea el adulto mayor; lo leen él y su cuidador; nadie lo cambia.
+    match /sosEvents/{id} {
+      allow read: if puedeVer(resource.data.elderUid);
+      allow create: if esYo(request.resource.data.elderUid)
+        && request.resource.data.keys().hasOnly(['elderUid', 'telefono', 'nombreContacto', 'esContacto', 'creadoEn'])
+        && request.resource.data.telefono is string
+        && request.resource.data.esContacto is bool
+        && request.resource.data.creadoEn == request.time;
+      allow update, delete: if false;
     }
 
     // ---------- vinculación ----------

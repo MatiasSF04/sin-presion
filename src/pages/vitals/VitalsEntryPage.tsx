@@ -2,7 +2,8 @@ import { useState, type CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getVitalTypeConfig, addVitalReading } from "../../services/vitals.service";
 import {
-  ajustarAlControl, describirRango, formatearNumero, notaRangoOptimo, parsearNumero, type ResultadoMedicion,
+  ajustarAlControl, describirRango, formatearNumero, notaRangoOptimo, parsearNumero, preguntaPendiente,
+  MAX_OBSERVACIONES, type ResultadoMedicion,
 } from "../../services/vitals.logic";
 import { useAuth } from "../../context/useAuth";
 import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
@@ -10,6 +11,7 @@ import { aplicarMetas } from "../../services/perfil.logic";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Boton } from "../../components/base/Boton";
 import { Tarjeta } from "../../components/base/Tarjeta";
+import { Chip } from "../../components/base/Chip";
 import { unirClases } from "../../estilos/unirClases";
 import s from "./VitalsEntryPage.module.css";
 
@@ -35,6 +37,9 @@ export function VitalsEntryPage() {
   const [saving, setSaving] = useState(false);
   const [resultado, setResultado] = useState<ResultadoMedicion | null>(null);
   const [errorGuardar, setErrorGuardar] = useState<string | null>(null);
+  // respuestas a las preguntas del signo (ej. { momento: "ayunas" }) y observaciones opcionales
+  const [elegidas, setElegidas] = useState<Record<string, string>>({});
+  const [observaciones, setObservaciones] = useState("");
 
   if (!config) {
     return (
@@ -73,6 +78,11 @@ export function VitalsEntryPage() {
   async function handleSave() {
     const elderUid = appUser?.uid;
     if (!elderUid) return;
+    const pendiente = preguntaPendiente(config!.opciones, elegidas);
+    if (pendiente) {
+      setErrorGuardar(`Responde antes de guardar: ${pendiente}`);
+      return;
+    }
     // por si guarda sin salir del campo que estaba escribiendo
     const finales = Object.fromEntries(
       config!.fields.map((f) => [f.key, ajustarAlControl(parsearNumero(textos[f.key] ?? "") ?? values[f.key], f)])
@@ -80,7 +90,10 @@ export function VitalsEntryPage() {
     setSaving(true);
     setErrorGuardar(null);
     try {
-      const r = await addVitalReading(elderUid, config!.type, finales, "manual", metasDelTipo);
+      const r = await addVitalReading(elderUid, config!.type, finales, "manual", metasDelTipo, {
+        detalle: elegidas,
+        observaciones,
+      });
       setValues(finales);
       setResultado(r);
     } catch (err) {
@@ -175,6 +188,42 @@ export function VitalsEntryPage() {
           </div>
         </Tarjeta>
       ))}
+
+      {config.opciones?.map((o) => (
+        <Tarjeta key={o.key} variante="suave">
+          <p className={s.etiquetaCampo} id={`pregunta-${o.key}`}>{o.pregunta}</p>
+          <div className={s.opciones} role="group" aria-labelledby={`pregunta-${o.key}`}>
+            {o.valores.map((v) => (
+              <Chip
+                key={v.valor}
+                className={s.opcion}
+                activo={elegidas[o.key] === v.valor}
+                onClick={() => {
+                  setElegidas((prev) => ({ ...prev, [o.key]: v.valor }));
+                  setErrorGuardar(null);
+                }}
+              >
+                {v.etiqueta}
+              </Chip>
+            ))}
+          </div>
+        </Tarjeta>
+      ))}
+
+      {config.conObservaciones && (
+        <Tarjeta variante="suave">
+          <label className={s.etiquetaCampo} htmlFor="observaciones">Observaciones (opcional)</label>
+          <textarea
+            id="observaciones"
+            className={s.observaciones}
+            rows={3}
+            maxLength={MAX_OBSERVACIONES}
+            placeholder="Ej.: me sentí mareado, tomé el remedio tarde…"
+            value={observaciones}
+            onChange={(e) => setObservaciones(e.target.value)}
+          />
+        </Tarjeta>
+      )}
 
       {nota && <p className={s.nota}>{nota}</p>}
       {errorGuardar && <p className={s.error} role="alert">{errorGuardar}</p>}

@@ -93,6 +93,20 @@ describe('addVitalReading: registro correcto', () => {
     expect(addDocMock.mock.calls[0][1]).toMatchObject({ fueraDeRango: false });
   });
 
+  it('guarda las opciones elegidas y las observaciones (limpias); sin observaciones no agrega el campo', async () => {
+    await addVitalReading(ELDER, 'azucar', { valor: 140 }, 'manual', undefined, {
+      detalle: { momento: 'postprandial' },
+      observaciones: '  después del almuerzo  ',
+    });
+    expect(addDocMock.mock.calls[0][1]).toMatchObject({
+      detalle: { momento: 'postprandial' },
+      observaciones: 'después del almuerzo',
+    });
+    await addVitalReading(ELDER, 'diuresis', { veces: 6 }, 'manual', undefined, { observaciones: '   ' });
+    expect(addDocMock.mock.calls[1][1]).not.toHaveProperty('observaciones');
+    expect(addDocMock.mock.calls[1][1]).not.toHaveProperty('detalle');
+  });
+
   it('marca source = "device" cuando el registro viene del BLE', async () => {
     await addVitalReading(ELDER, 'presion', { sistolica: 118, diastolica: 76, pulso: 68 }, 'device');
     expect(addDocMock.mock.calls[0][1].source).toBe('device');

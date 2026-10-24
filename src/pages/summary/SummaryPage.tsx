@@ -56,6 +56,10 @@ function formatValue(reading: StoredVitalReading): string {
       return `${v.cantidad} pasos`;
     case "hidratacion":
       return `${v.vasos} vasos`;
+    case "diuresis":
+      return `Orinó ${v.veces} ${v.veces === 1 ? "vez" : "veces"}`;
+    case "deposiciones":
+      return `${v.veces} ${v.veces === 1 ? "deposición" : "deposiciones"}`;
     default:
       return "—";
   }
@@ -87,6 +91,8 @@ const iconByType: Record<string, string> = {
   azucar: "💧",
   pasos: "📈",
   hidratacion: "🥤",
+  diuresis: "🚻",
+  deposiciones: "🧻",
 };
 
 const CHART_WIDTH = 300;
