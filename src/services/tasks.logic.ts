@@ -401,6 +401,15 @@ export function agruparTareasDelDia(
   };
 }
 
+export function esMedianoche(time: string): boolean {
+  return time === "00:00";
+}
+
+/** Hora para mostrar: "00:00" se aclara como medianoche para que no se confunda con el día. */
+export function formatearHora(time: string): string {
+  return esMedianoche(time) ? "00:00 · medianoche" : time;
+}
+
 /**
  * Tareas pendientes de mañana, para la sección "Próximas" (solo se ven, no se marcan).
  * Incluye las dosis de las 00:00, que pertenecen al día siguiente.

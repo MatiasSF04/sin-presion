@@ -15,8 +15,8 @@ import {
   createTaskSeries, setTaskDone, quitarTarea, quitarSerieDesde, restaurarTareas, ErrorTarea,
 } from "../../services/tasks.service";
 import {
-  computeDayProgress, computeWeeklyAdherence, taskState, tieneOcurrenciasSiguientes, toISODate,
-  type Task, type TaskDefinition,
+  computeDayProgress, computeWeeklyAdherence, esQuitable, formatearHora, taskState, tareasDeManana,
+  tieneOcurrenciasSiguientes, toISODate, type Task, type TaskDefinition,
 } from "../../services/tasks.logic";
 
 interface AvisoQuitar {
@@ -44,6 +44,7 @@ export function TasksPage() {
 
   const today = toISODate(now);
   const todays = tasks.filter((t) => t.dueDate === today);
+  const proximas = tareasDeManana(tasks, today);
   const progress = computeDayProgress(tasks, today);
   const weekly = computeWeeklyAdherence(tasks, now);
 
@@ -143,10 +144,10 @@ export function TasksPage() {
             <div className={s.tareaTextos}>
               <div className={unirClases(s.tareaTitulo, done && s.tareaTituloHecha)}>{t.title}</div>
               <div className={unirClases(s.tareaHora, st === "overdue" && s.tareaHoraVencida)}>
-                {t.time}{st === "overdue" ? " · sin marcar" : ""}
+                {formatearHora(t.time)}{st === "overdue" ? " · sin marcar" : ""}
               </div>
             </div>
-            {!done && (
+            {esQuitable(t, now) && (
               <button type="button" aria-label={`Quitar ${t.title}`} onClick={() => setPorQuitar(t)} className={s.eliminar}>
                 <span aria-hidden="true">🗑</span>
               </button>
@@ -154,6 +155,20 @@ export function TasksPage() {
           </div>
         );
       })}
+
+      {!loading && proximas.length > 0 && (
+        <section aria-labelledby="titulo-proximas" className={s.proximas}>
+          <h2 id="titulo-proximas" className={s.seccion}>Próximas · mañana</h2>
+          {proximas.map((t) => (
+            <div key={t.id} className={unirClases(s.tarea, s.tareaProxima)}>
+              <div className={s.tareaTextos}>
+                <div className={s.tareaTitulo}>{t.title}</div>
+                <div className={s.tareaHora}>{formatearHora(t.time)}</div>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       {showForm ? (
         <TaskForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
@@ -163,7 +178,7 @@ export function TasksPage() {
 
       <Dialogo
         abierto={porQuitar !== null}
-        titulo={porQuitar ? `¿Quitar «${porQuitar.title}» de las ${porQuitar.time}?` : ""}
+        titulo={porQuitar ? `¿Quitar «${porQuitar.title}» de las ${formatearHora(porQuitar.time)}?` : ""}
         descripcion="Podrás deshacerlo durante unos segundos."
         onCerrar={() => !quitando && setPorQuitar(null)}
       >

@@ -16,7 +16,8 @@ import {
   createTaskSeries, quitarTarea, quitarSerieDesde, restaurarTareas, updateTask, updateSeriesFrom, ErrorTarea,
 } from "../../services/tasks.service";
 import {
-  agruparTareasDelDia, computeDayProgress, taskState, tieneOcurrenciasSiguientes, toISODate,
+  agruparTareasDelDia, computeDayProgress, esMedianoche, esQuitable, formatearHora, taskState, tareasDeManana,
+  tieneOcurrenciasSiguientes, toISODate,
   type CambiosTarea, type CreadoPor, type Task, type TaskDefinition,
 } from "../../services/tasks.logic";
 import s from "./TareasCuidadorPage.module.css";
@@ -52,6 +53,8 @@ export function TareasCuidadorPage() {
   const today = toISODate(now);
   const { pendientes, completadas } = agruparTareasDelDia(tasks, today);
   const progreso = computeDayProgress(tasks, today);
+  const proximas = tareasDeManana(tasks, today);
+  const esDeHoy = (t: Task) => t.dueDate === today;
   const nombre = vinculo.tipo === "vinculado" ? vinculo.nombre : "";
   const yo: CreadoPor | null = appUser ? { uid: appUser.uid, rol: "caregiver" } : null;
 
@@ -84,7 +87,9 @@ export function TareasCuidadorPage() {
           ? await quitarTarea(t.id, yo)
           : await quitarSerieDesde(elderUid, t.seriesId, t, yo);
       setAviso({
-        mensaje: modo === "hoy" ? `Quitaste «${t.title}» de hoy.` : `Quitaste «${t.title}» desde hoy en adelante.`,
+        mensaje: esDeHoy(t)
+          ? modo === "hoy" ? `Quitaste «${t.title}» de hoy.` : `Quitaste «${t.title}» desde hoy en adelante.`
+          : modo === "hoy" ? `Quitaste «${t.title}» de mañana.` : `Quitaste «${t.title}» desde mañana en adelante.`,
         ids,
       });
     } catch (e) {
@@ -104,6 +109,40 @@ export function TareasCuidadorPage() {
     } catch (e) {
       mostrarError(e, "No se pudo deshacer. Revisa tu conexión.");
     }
+  }
+
+  /** Tarjeta de una tarea pendiente (de hoy o de mañana): editar siempre; quitar solo si aún no está atrasada. */
+  function tarjetaPendiente(t: Task) {
+    const vencida = taskState(t, now) === "overdue";
+    const quitable = esQuitable(t, now);
+    return (
+      <div key={t.id} className={unirClases(s.tarea, vencida && s.tareaVencida)}>
+        <div className={s.tareaFila}>
+          <span className={s.hora}>{t.time}</span>
+          <div className={s.textos}>
+            <span className={s.titulo}>{t.title}</span>
+            {esMedianoche(t.time) && <span className={s.nota}>Medianoche</span>}
+            {vencida && <span className={s.estadoVencida}>Atrasada · sin marcar</span>}
+            {t.notes && <span className={s.nota}>{t.notes}</span>}
+          </div>
+        </div>
+        <div className={unirClases(s.acciones, !quitable && s.accionesUna)}>
+          <Boton variante="secundario" onClick={() => setEditando(t)} aria-label={`Editar ${t.title}`}>
+            Editar
+          </Boton>
+          {quitable && (
+            <Boton
+              variante="secundario"
+              className={s.quitar}
+              onClick={() => setPorQuitar(t)}
+              aria-label={`Quitar ${t.title}`}
+            >
+              Quitar
+            </Boton>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -143,38 +182,18 @@ export function TareasCuidadorPage() {
             <p className={s.mensaje}>No quedan tareas pendientes hoy.</p>
           )}
 
-          {pendientes.map((t) => {
-            const vencida = taskState(t, now) === "overdue";
-            return (
-              <div key={t.id} className={unirClases(s.tarea, vencida && s.tareaVencida)}>
-                <div className={s.tareaFila}>
-                  <span className={s.hora}>{t.time}</span>
-                  <div className={s.textos}>
-                    <span className={s.titulo}>{t.title}</span>
-                    {vencida && <span className={s.estadoVencida}>Atrasada · sin marcar</span>}
-                    {t.notes && <span className={s.nota}>{t.notes}</span>}
-                  </div>
-                </div>
-                <div className={s.acciones}>
-                  <Boton variante="secundario" onClick={() => setEditando(t)} aria-label={`Editar ${t.title}`}>
-                    Editar
-                  </Boton>
-                  <Boton
-                    variante="secundario"
-                    className={s.quitar}
-                    onClick={() => setPorQuitar(t)}
-                    aria-label={`Quitar ${t.title}`}
-                  >
-                    Quitar
-                  </Boton>
-                </div>
-              </div>
-            );
-          })}
+          {pendientes.map(tarjetaPendiente)}
 
           <Boton variante="agregar" bloque onClick={() => setCreando(true)} disabled={!elderUid}>
             + Agregar tarea
           </Boton>
+
+          {proximas.length > 0 && (
+            <>
+              <h2 className={s.seccion}>Próximas · mañana ({proximas.length})</h2>
+              {proximas.map(tarjetaPendiente)}
+            </>
+          )}
 
           {completadas.length > 0 && (
             <>
@@ -200,16 +219,18 @@ export function TareasCuidadorPage() {
 
       <Dialogo
         abierto={porQuitar !== null}
-        titulo={porQuitar ? `¿Quitar «${porQuitar.title}» de las ${porQuitar.time}?` : ""}
+        titulo={porQuitar
+          ? `¿Quitar «${porQuitar.title}» de ${esDeHoy(porQuitar) ? "hoy" : "mañana"} a las ${formatearHora(porQuitar.time)}?`
+          : ""}
         descripcion={`${nombre || "Tu familiar"} dejará de verla en su app. Podrás deshacerlo durante unos segundos.`}
         onCerrar={() => !quitando && setPorQuitar(null)}
       >
         <Boton variante="emergencia" bloque disabled={quitando} onClick={() => quitar("hoy")}>
-          Quitar solo la de hoy
+          {porQuitar && !esDeHoy(porQuitar) ? "Quitar solo la de mañana" : "Quitar solo la de hoy"}
         </Boton>
         {porQuitar && tieneOcurrenciasSiguientes(tasks, porQuitar) && (
           <Boton variante="secundario" bloque disabled={quitando} className={s.quitar} onClick={() => quitar("serie")}>
-            Quitar hoy y los días siguientes
+            {esDeHoy(porQuitar) ? "Quitar hoy y los días siguientes" : "Quitar desde mañana en adelante"}
           </Boton>
         )}
         <Boton variante="secundario" bloque disabled={quitando} onClick={() => setPorQuitar(null)}>

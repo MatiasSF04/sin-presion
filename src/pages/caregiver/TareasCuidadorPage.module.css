@@ -94,6 +94,11 @@
   margin-top: var(--espacio-3);
 }
 
+/* Tarea atrasada: no se puede quitar, solo queda Editar a todo el ancho. */
+.accionesUna {
+  grid-template-columns: 1fr;
+}
+
 /* Acción destructiva secundaria: borde y texto de alerta. */
 .quitar {
   border-color: var(--color-emergencia);

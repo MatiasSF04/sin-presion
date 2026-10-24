@@ -106,3 +106,22 @@
   color: var(--color-emergencia);
   font-weight: var(--peso-fuerte);
 }
+
+/* Sección "Próximas": solo lectura para el adulto mayor. */
+.proximas {
+  margin: var(--espacio-5) 0;
+}
+
+.seccion {
+  margin-bottom: var(--espacio-3);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-fuerte);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+
+.tareaProxima {
+  border-style: dashed;
+  background: var(--color-superficie);
+}

@@ -20,6 +20,8 @@ import {
   esQuitable,
   esTratamientoPorHoras,
   tareasDeManana,
+  esMedianoche,
+  formatearHora,
   type Task,
   type TaskDefinition,
 } from "./tasks.logic";
@@ -333,5 +335,14 @@ describe("sección Próximas (todo el día de mañana)", () => {
       "2026-10-12"
     );
     expect(r.map((t) => t.id)).toEqual(["medianoche", "clinica"]);
+  });
+});
+
+describe("etiqueta de medianoche", () => {
+  it("solo 00:00 es medianoche y se muestra aclarada; el resto queda igual", () => {
+    expect(esMedianoche("00:00")).toBe(true);
+    expect(esMedianoche("12:00")).toBe(false);
+    expect(formatearHora("00:00")).toBe("00:00 · medianoche");
+    expect(formatearHora("08:30")).toBe("08:30");
   });
 });
