@@ -83,7 +83,7 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     colorLight: "var(--color-advertencia-suave)",
     fields: [
       {
-        key: "valor", label: "Glicemia", unit: "mg/dL", min: 40, max: 400, step: 1, default: 100,
+        key: "valor", label: "Glicemia", unit: "mg/dL", min: 40, max: 600, step: 1, default: 100,
         optimo: { min: 60, max: 300 },
       },
     ],
@@ -165,4 +165,4 @@ export async function getRecentVitalReadings(
       recordedAt: (data.recordedAt as Timestamp).toDate(),
     };
   });
-}
+}
