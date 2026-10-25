@@ -4,6 +4,7 @@ import { useAuth } from "../../context/useAuth";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Tarjeta } from "../../components/base/Tarjeta";
 import { Boton } from "../../components/base/Boton";
+import { BotonCerrarSesion } from "../../components/shared/BotonCerrarSesion";
 import { canjearCodigoVinculo, ErrorVinculo } from "../../services/link.service";
 import { esCodigoValido, normalizarCodigo } from "../../services/link.logic";
 import s from "./LinkCaregiverPage.module.css";
@@ -79,6 +80,8 @@ export function LinkCaregiverPage() {
           {enviando ? "Vinculando…" : "Vincular"}
         </Boton>
       </form>
+
+      <BotonCerrarSesion />
     </div>
   );
 }

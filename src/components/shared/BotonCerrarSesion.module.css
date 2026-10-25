@@ -1,0 +1,9 @@
+.contenedor {
+  margin-top: var(--espacio-6);
+}
+
+.error {
+  font-size: var(--texto-sm);
+  color: var(--color-emergencia);
+  margin-top: var(--espacio-2);
+}

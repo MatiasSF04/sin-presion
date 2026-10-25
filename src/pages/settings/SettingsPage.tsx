@@ -3,6 +3,7 @@ import { useAuth } from "../../context/useAuth";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Tarjeta } from "../../components/base/Tarjeta";
 import { Boton } from "../../components/base/Boton";
+import { BotonCerrarSesion } from "../../components/shared/BotonCerrarSesion";
 import { ErrorVinculo, generarCodigoVinculo } from "../../services/link.service";
 import { estaVencido, formatearCodigo, tiempoRestante } from "../../services/link.logic";
 import s from "./SettingsPage.module.css";
@@ -79,6 +80,8 @@ export function SettingsPage() {
       </Tarjeta>
 
       {/* La sincronización del reloj (BLE) se agrega en su propio commit. */}
+
+      <BotonCerrarSesion />
     </div>
   );
 }

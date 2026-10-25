@@ -41,6 +41,15 @@ export async function syncReminders(tasks: Task[], now: Date = new Date()): Prom
   return plan.length;
 }
 
+/** Cancela todos los recordatorios programados en este teléfono (al cerrar sesión). */
+export async function cancelarRecordatorios(): Promise<void> {
+  if (!remindersSupported()) return;
+  const pending = await LocalNotifications.getPending();
+  if (pending.notifications.length > 0) {
+    await LocalNotifications.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) });
+  }
+}
+
 /** Al tocar una notificación se abre el checklist para completar la tarea. */
 export function onReminderTapped(handler: (taskId: string) => void): () => void {
   if (!remindersSupported()) return () => {};

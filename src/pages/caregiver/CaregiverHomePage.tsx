@@ -10,6 +10,7 @@ import { sosReciente } from "../../services/sos.logic";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Tarjeta } from "../../components/base/Tarjeta";
 import { Boton } from "../../components/base/Boton";
+import { BotonCerrarSesion } from "../../components/shared/BotonCerrarSesion";
 import { BarraProgreso } from "../../components/base/BarraProgreso";
 import { unirClases } from "../../estilos/unirClases";
 import { VITAL_TYPES } from "../../services/vitals.service";
@@ -132,6 +133,8 @@ export function CaregiverHomePage() {
           </nav>
         </>
       )}
+
+      <BotonCerrarSesion />
     </div>
   );
 }

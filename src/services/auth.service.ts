@@ -5,6 +5,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { cancelarRecordatorios } from "./reminders.service";
 
 export type UserRole = "elder" | "caregiver";
 
@@ -101,7 +102,16 @@ export function clearSavedPin() {
   localStorage.removeItem(UID_STORAGE_KEY);
 }
 
+/**
+ * Cierra la sesión en este dispositivo: cancela los recordatorios programados (para que no
+ * sigan sonando los de esta cuenta si entra otra persona), borra el PIN y sale de Firebase.
+ */
 export async function signOut() {
+  try {
+    await cancelarRecordatorios();
+  } catch (e) {
+    console.warn("No se pudieron cancelar los recordatorios", e);
+  }
   clearSavedPin();
   await firebaseSignOut(auth);
 }

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import { useAuth } from "../context/useAuth";
 
 import { LoginPage } from "../pages/auth/LoginPage";
@@ -19,6 +20,10 @@ import { TareasCuidadorPage } from "../pages/caregiver/TareasCuidadorPage";
 import { PerfilCuidadorPage } from "../pages/caregiver/PerfilCuidadorPage";
 import { MedicionesCuidadorPage } from "../pages/caregiver/MedicionesCuidadorPage";
 
+// En la APK la sesión queda abierta y no se pide PIN (decidido el 25 oct 2026): se sale con
+// "Cerrar sesión". En la web el PIN se mantiene, porque el computador puede ser compartido.
+const PIDE_PIN = !Capacitor.isNativePlatform();
+
 export function AppRoutes() {
   const { firebaseReady, appUser, pinExists, pinUnlocked } = useAuth();
 
@@ -29,7 +34,7 @@ export function AppRoutes() {
   // Caso 1: no hay sesión de Firebase (nunca inició sesión o cerró sesión)
   if (!appUser) {
     // Si ya existe un PIN guardado en este dispositivo, primero intenta desbloquear con PIN
-    if (pinExists && !pinUnlocked) {
+    if (PIDE_PIN && pinExists && !pinUnlocked) {
       return (
         <Routes>
           <Route path="*" element={<PinUnlockPage />} />
@@ -46,7 +51,7 @@ export function AppRoutes() {
   }
 
   // Caso 2: hay sesión, pero el PIN de este dispositivo aún no fue creado ni desbloqueado
-  if (!pinUnlocked) {
+  if (PIDE_PIN && !pinUnlocked) {
     return (
       <Routes>
         <Route path="*" element={<PinUnlockPage />} />
