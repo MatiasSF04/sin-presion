@@ -26,6 +26,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- tokens de avisos push (teléfonos de cuidadores) ----------
+    // id = token del teléfono. Cada usuario solo escribe o borra los suyos; nadie los lee desde
+    // la app: la función que envía los avisos los lee con permisos de administrador.
+    // Se permite reasignar un token existente: el token es del teléfono, no de la cuenta.
+    match /tokensPush/{token} {
+      allow read: if false;
+      allow create, update: if autenticado()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'plataforma', 'actualizadoEn']);
+      allow delete: if autenticado() && resource.data.uid == request.auth.uid;
+    }
+
     // ---------- signos vitales ----------
     match /vitalReadings/{id} {
       allow read: if puedeVer(resource.data.elderUid);

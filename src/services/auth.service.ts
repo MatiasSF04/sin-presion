@@ -6,6 +6,7 @@ import {
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { cancelarRecordatorios } from "./reminders.service";
+import { quitarTokenPush } from "./push.service";
 
 export type UserRole = "elder" | "caregiver";
 
@@ -103,14 +104,20 @@ export function clearSavedPin() {
 }
 
 /**
- * Cierra la sesión en este dispositivo: cancela los recordatorios programados (para que no
- * sigan sonando los de esta cuenta si entra otra persona), borra el PIN y sale de Firebase.
+ * Cierra la sesión en este dispositivo: cancela los recordatorios programados y borra el token
+ * de avisos (para que no sigan llegando los de esta cuenta si entra otra persona), borra el PIN
+ * y sale de Firebase. El token se borra antes de salir, porque las reglas exigen sesión.
  */
 export async function signOut() {
   try {
     await cancelarRecordatorios();
   } catch (e) {
     console.warn("No se pudieron cancelar los recordatorios", e);
+  }
+  try {
+    await quitarTokenPush();
+  } catch (e) {
+    console.warn("No se pudo quitar el token de avisos", e);
   }
   clearSavedPin();
   await firebaseSignOut(auth);

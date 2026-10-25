@@ -6,6 +6,7 @@ import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
 import { useMedicionesRecientes } from "../../hooks/useMedicionesRecientes";
 import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
 import { useEventosSos } from "../../hooks/useEventosSos";
+import { alTocarAviso, registrarPush } from "../../services/push.service";
 import { sosReciente } from "../../services/sos.logic";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Tarjeta } from "../../components/base/Tarjeta";
@@ -35,6 +36,16 @@ export function CaregiverHomePage() {
   const { perfil } = usePerfilAdulto(elderUid);
   const eventosSos = useEventosSos(elderUid);
   const [ahora, setAhora] = useState(new Date());
+
+  // avisos push: solo en la APK y cuando ya hay un adulto mayor vinculado
+  const uid = appUser?.uid;
+  useEffect(() => {
+    if (!uid || !elderUid) return;
+    registrarPush(uid).catch((e) => console.error("No se pudieron activar los avisos", e));
+  }, [uid, elderUid]);
+
+  // al tocar un aviso se abre la pantalla que corresponda
+  useEffect(() => alTocarAviso((ruta) => navigate(ruta)), [navigate]);
 
   // refresca las atrasadas cada minuto
   useEffect(() => {
