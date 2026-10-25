@@ -10,6 +10,7 @@ import { Boton } from "../../components/base/Boton";
 import { Dialogo } from "../../components/base/Dialogo";
 import { AvisoDeshacer } from "../../components/base/AvisoDeshacer";
 import { unirClases } from "../../estilos/unirClases";
+import { registrarError } from "../../services/errores.service";
 import s from "./TasksPage.module.css";
 import {
   createTaskSeries, setTaskDone, quitarTarea, quitarSerieDesde, restaurarTareas, ErrorTarea,
@@ -80,7 +81,7 @@ export function TasksPage() {
       });
       setPorQuitar(null);
     } catch (e) {
-      if (!(e instanceof ErrorTarea)) console.error("No se pudo quitar la tarea", e);
+      if (!(e instanceof ErrorTarea)) registrarError("tareas.quitar", e);
       setErrorAccion(e instanceof ErrorTarea ? e.message : "No se pudo quitar la tarea. Revisa tu conexión.");
       setPorQuitar(null);
     } finally {
@@ -95,7 +96,7 @@ export function TasksPage() {
     try {
       await restaurarTareas(ids);
     } catch (e) {
-      console.error("No se pudo deshacer", e);
+      registrarError("tareas.deshacer", e);
       setErrorAccion("No se pudo deshacer. Revisa tu conexión.");
     }
   }

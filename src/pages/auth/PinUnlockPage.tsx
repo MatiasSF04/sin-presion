@@ -11,6 +11,7 @@ import {
 import { Boton } from "../../components/base/Boton";
 import { unirClases } from "../../estilos/unirClases";
 import s from "./Acceso.module.css";
+import { registrarError } from "../../services/errores.service";
 
 const PIN_LENGTH = 4;
 const MAX_ATTEMPTS = 5;
@@ -106,7 +107,7 @@ export function PinUnlockPage() {
           }
         }
       } catch (err) {
-        console.error("Error procesando el PIN:", err);
+        registrarError("pin.procesar", err);
         setError("Ocurrió un error. Intenta de nuevo.");
         setDigits("");
       } finally {

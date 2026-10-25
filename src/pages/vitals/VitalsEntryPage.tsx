@@ -13,6 +13,7 @@ import { Boton } from "../../components/base/Boton";
 import { Tarjeta } from "../../components/base/Tarjeta";
 import { Chip } from "../../components/base/Chip";
 import { unirClases } from "../../estilos/unirClases";
+import { registrarError } from "../../services/errores.service";
 import s from "./VitalsEntryPage.module.css";
 
 export function VitalsEntryPage() {
@@ -97,7 +98,7 @@ export function VitalsEntryPage() {
       setValues(finales);
       setResultado(r);
     } catch (err) {
-      console.error("Error guardando medición:", err);
+      registrarError("mediciones.guardar", err);
       setErrorGuardar("No se pudo guardar la medición. Revisa tu conexión e inténtalo de nuevo.");
     } finally {
       setSaving(false);

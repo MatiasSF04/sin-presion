@@ -13,6 +13,7 @@ import {
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Tarjeta } from "../../components/base/Tarjeta";
 import { unirClases } from "../../estilos/unirClases";
+import { registrarError } from "../../services/errores.service";
 import s from "./SummaryPage.module.css";
 
 const WEEKDAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
@@ -113,7 +114,7 @@ export function SummaryPage() {
     getRecentVitalReadings(elderUid, 50)
       .then(setReadings)
       .catch((err) => {
-        console.error("Error cargando mediciones:", err);
+        registrarError("mediciones.cargar", err);
         setError("No se pudieron cargar tus mediciones.");
       })
       .finally(() => setLoading(false));

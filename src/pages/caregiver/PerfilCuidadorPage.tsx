@@ -14,6 +14,7 @@ import {
   type MetaCampo, type MetasSignos, type PerfilAdulto,
 } from "../../services/perfil.logic";
 import { ErrorPerfil, guardarPerfil } from "../../services/perfil.service";
+import { registrarError } from "../../services/errores.service";
 import s from "./PerfilCuidadorPage.module.css";
 
 /** Solo los signos que tienen rango sugerido se pueden personalizar. */
@@ -137,7 +138,7 @@ function FormularioPerfil({ elderUid, cuidadorUid, nombreCuidador, nombreAdulto,
       await guardarPerfil(elderUid, cuidadorUid, { margenAvisoMin: margen, metas, contactoEmergencia: contacto });
       setMensaje({ tipo: "ok", texto: "Cambios guardados." });
     } catch (e) {
-      if (!(e instanceof ErrorPerfil)) console.error("No se pudo guardar el perfil", e);
+      if (!(e instanceof ErrorPerfil)) registrarError("perfil.guardar", e);
       setMensaje({
         tipo: "error",
         texto: e instanceof ErrorPerfil ? e.message : "No se pudieron guardar los cambios. Revisa tu conexión.",

@@ -2,6 +2,7 @@ import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { deleteDoc, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { registrarError } from "./errores.service";
 
 /**
  * Avisos push al cuidador (incumplimiento, SOS, mediciones fuera de rango).
@@ -73,13 +74,9 @@ export async function registrarPush(uid: string): Promise<boolean> {
     await PushNotifications.addListener("registration", (t) => {
       const u = uidRegistrado;
       if (!u) return;
-      guardarToken(u, t.value, Capacitor.getPlatform()).catch((e) =>
-        console.error("No se pudo guardar el token de avisos", e)
-      );
+      guardarToken(u, t.value, Capacitor.getPlatform()).catch((e) => registrarError("push.guardarToken", e));
     });
-    await PushNotifications.addListener("registrationError", (e) =>
-      console.error("No se pudo registrar el teléfono para avisos", e)
-    );
+    await PushNotifications.addListener("registrationError", (e) => registrarError("push.registrar", e));
   }
 
   uidRegistrado = uid;

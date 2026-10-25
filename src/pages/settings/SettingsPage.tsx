@@ -6,6 +6,7 @@ import { Boton } from "../../components/base/Boton";
 import { BotonCerrarSesion } from "../../components/shared/BotonCerrarSesion";
 import { ErrorVinculo, generarCodigoVinculo } from "../../services/link.service";
 import { estaVencido, formatearCodigo, tiempoRestante } from "../../services/link.logic";
+import { registrarError } from "../../services/errores.service";
 import s from "./SettingsPage.module.css";
 
 interface CodigoActivo {
@@ -37,7 +38,7 @@ export function SettingsPage() {
       setCodigo(await generarCodigoVinculo(appUser.uid));
       setAhora(new Date());
     } catch (e) {
-      console.error("No se pudo generar el código de vinculación", e);
+      if (!(e instanceof ErrorVinculo)) registrarError("vinculo.generar", e);
       setError(e instanceof ErrorVinculo ? e.message : "No se pudo generar el código. Revisa tu conexión.");
     } finally {
       setGenerando(false);

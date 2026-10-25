@@ -8,6 +8,7 @@ import { auth, db } from "./firebase";
 import { cancelarRecordatorios } from "./reminders.service";
 import { quitarTokenPush } from "./push.service";
 import { ErrorPerfilInexistente } from "./auth.logic";
+import { registrarError } from "./errores.service";
 
 export type UserRole = "elder" | "caregiver";
 
@@ -119,12 +120,12 @@ export async function signOut() {
   try {
     await cancelarRecordatorios();
   } catch (e) {
-    console.warn("No se pudieron cancelar los recordatorios", e);
+    registrarError("recordatorios.cancelar", e);
   }
   try {
     await quitarTokenPush();
   } catch (e) {
-    console.warn("No se pudo quitar el token de avisos", e);
+    registrarError("push.quitarToken", e);
   }
   clearSavedPin();
   await firebaseSignOut(auth);

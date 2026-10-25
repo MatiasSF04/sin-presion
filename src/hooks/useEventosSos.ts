@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { escucharSos } from "../services/sos.service";
+import { registrarError } from "../services/errores.service";
 import type { EventoSos } from "../services/sos.logic";
 
 interface Respuesta {
@@ -17,7 +18,7 @@ export function useEventosSos(elderUid: string | undefined) {
       elderUid,
       (eventos) => setRespuesta({ elderUid, eventos }),
       (e) => {
-        console.error("No se pudieron cargar los eventos de emergencia", e);
+        registrarError("sos.escuchar", e);
         setRespuesta({ elderUid, eventos: [] });
       }
     );

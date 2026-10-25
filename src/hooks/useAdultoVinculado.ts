@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { obtenerAdultoVinculado } from "../services/link.service";
 import { fetchAppUser } from "../services/auth.service";
+import { registrarError } from "../services/errores.service";
 
 export type EstadoVinculo =
   | { tipo: "cargando" }
@@ -23,7 +24,7 @@ export function useAdultoVinculado(cuidadorUid: string | undefined): EstadoVincu
         const adulto = await fetchAppUser(elderUid);
         if (activo) setEstado({ tipo: "vinculado", elderUid, nombre: adulto.name });
       } catch (e) {
-        console.error("No se pudo cargar el vínculo del cuidador", e);
+        registrarError("vinculo.cargar", e);
         if (activo) setEstado({ tipo: "error" });
       }
     })();

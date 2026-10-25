@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { subscribeTasks } from "../services/tasks.service";
 import { syncReminders } from "../services/reminders.service";
+import { registrarError } from "../services/errores.service";
 import { addDays, startOfWeek, toISODate, HORIZON_DAYS, type Task } from "../services/tasks.logic";
 
 /** Resultado de la última respuesta de Firestore, junto con la consulta que la produjo. */
@@ -44,7 +45,7 @@ export function useUpcomingTasks(
       (list) => {
         setRespuesta({ clave, tasks: list, error: null });
         if (programarRecordatorios) {
-          syncReminders(list).catch((e) => console.warn("No se pudieron programar recordatorios", e));
+          syncReminders(list).catch((e) => registrarError("recordatorios.programar", e));
         }
       },
       (e) => setRespuesta({ clave, tasks: [], error: e.message })

@@ -20,6 +20,7 @@ import {
   tieneOcurrenciasSiguientes, toISODate,
   type CambiosTarea, type CreadoPor, type Task, type TaskDefinition,
 } from "../../services/tasks.logic";
+import { registrarError } from "../../services/errores.service";
 import s from "./TareasCuidadorPage.module.css";
 
 interface AvisoQuitar {
@@ -58,8 +59,8 @@ export function TareasCuidadorPage() {
   const nombre = vinculo.tipo === "vinculado" ? vinculo.nombre : "";
   const yo: CreadoPor | null = appUser ? { uid: appUser.uid, rol: "caregiver" } : null;
 
-  function mostrarError(e: unknown, generico: string) {
-    if (!(e instanceof ErrorTarea)) console.error(generico, e);
+  function mostrarError(e: unknown, generico: string, funcionalidad: string) {
+    if (!(e instanceof ErrorTarea)) registrarError(funcionalidad, e);
     setErrorAccion(e instanceof ErrorTarea ? e.message : generico);
   }
 
@@ -93,7 +94,7 @@ export function TareasCuidadorPage() {
         ids,
       });
     } catch (e) {
-      mostrarError(e, "No se pudo quitar la tarea. Revisa tu conexión.");
+      mostrarError(e, "No se pudo quitar la tarea. Revisa tu conexión.", "tareasCuidador.quitar");
     } finally {
       setPorQuitar(null);
       setQuitando(false);
@@ -107,7 +108,7 @@ export function TareasCuidadorPage() {
     try {
       await restaurarTareas(ids);
     } catch (e) {
-      mostrarError(e, "No se pudo deshacer. Revisa tu conexión.");
+      mostrarError(e, "No se pudo deshacer. Revisa tu conexión.", "tareasCuidador.deshacer");
     }
   }
 

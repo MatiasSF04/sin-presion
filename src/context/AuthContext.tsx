@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut as firebaseSignOut, type User } from "fireb
 import { auth } from "../services/firebase";
 import { fetchAppUser, hasSavedPin, type AppUser } from "../services/auth.service";
 import { conTiempoLimite, ErrorPerfilInexistente, mensajeErrorAcceso } from "../services/auth.logic";
+import { registrarError } from "../services/errores.service";
 import { AuthContext } from "./useAuth";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -27,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setErrorPerfil(null);
       return null;
     } catch (e) {
-      console.error("No se pudo cargar el perfil del usuario", e);
+      registrarError("perfil.cargar", e);
       setAppUser(null);
       if (e instanceof ErrorPerfilInexistente) await firebaseSignOut(auth).catch(() => {});
       const mensaje = mensajeErrorAcceso(e, "login");

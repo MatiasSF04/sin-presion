@@ -7,6 +7,7 @@ import { useMedicionesRecientes } from "../../hooks/useMedicionesRecientes";
 import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
 import { useEventosSos } from "../../hooks/useEventosSos";
 import { alTocarAviso, registrarPush } from "../../services/push.service";
+import { registrarError } from "../../services/errores.service";
 import { sosReciente } from "../../services/sos.logic";
 import { EncabezadoPagina } from "../../components/base/EncabezadoPagina";
 import { Tarjeta } from "../../components/base/Tarjeta";
@@ -41,7 +42,7 @@ export function CaregiverHomePage() {
   const uid = appUser?.uid;
   useEffect(() => {
     if (!uid || !elderUid) return;
-    registrarPush(uid).catch((e) => console.error("No se pudieron activar los avisos", e));
+    registrarPush(uid).catch((e) => registrarError("push.activar", e));
   }, [uid, elderUid]);
 
   // al tocar un aviso se abre la pantalla que corresponda

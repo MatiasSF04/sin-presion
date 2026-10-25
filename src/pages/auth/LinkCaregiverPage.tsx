@@ -7,6 +7,7 @@ import { Boton } from "../../components/base/Boton";
 import { BotonCerrarSesion } from "../../components/shared/BotonCerrarSesion";
 import { canjearCodigoVinculo, ErrorVinculo } from "../../services/link.service";
 import { esCodigoValido, normalizarCodigo } from "../../services/link.logic";
+import { registrarError } from "../../services/errores.service";
 import s from "./LinkCaregiverPage.module.css";
 
 export function LinkCaregiverPage() {
@@ -27,7 +28,7 @@ export function LinkCaregiverPage() {
       await canjearCodigoVinculo(appUser.uid, entrada);
       navigate("/caregiver", { replace: true });
     } catch (err) {
-      console.error("No se pudo canjear el código de vinculación", err);
+      if (!(err instanceof ErrorVinculo)) registrarError("vinculo.canjear", err);
       setError(err instanceof ErrorVinculo ? err.message : "No se pudo vincular. Revisa tu conexión.");
       setEnviando(false);
     }

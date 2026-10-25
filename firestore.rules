@@ -38,6 +38,25 @@ service cloud.firestore {
       allow delete: if autenticado() && resource.data.uid == request.auth.uid;
     }
 
+    // ---------- registro de errores del piloto ----------
+    // La app solo crea registros propios con campos acotados; nadie los lee ni modifica desde la app
+    // (se revisan en la consola). Se borran solos con la política TTL sobre expiraEn (30 días).
+    match /registroErrores/{id} {
+      allow read, update, delete: if false;
+      allow create: if autenticado()
+        && request.resource.data.keys().hasOnly(
+             ['funcionalidad', 'mensaje', 'codigo', 'uid', 'plataforma', 'versionApp', 'creadoEn', 'expiraEn'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.funcionalidad is string && request.resource.data.funcionalidad.size() <= 60
+        && request.resource.data.mensaje is string && request.resource.data.mensaje.size() <= 500
+        && request.resource.data.codigo is string && request.resource.data.codigo.size() <= 60
+        && request.resource.data.plataforma is string && request.resource.data.plataforma.size() <= 10
+        && request.resource.data.versionApp is string && request.resource.data.versionApp.size() <= 20
+        && request.resource.data.creadoEn == request.time
+        && request.resource.data.expiraEn is timestamp
+        && request.resource.data.expiraEn <= request.time + duration.value(31, 'd');
+    }
+
     // ---------- signos vitales ----------
     match /vitalReadings/{id} {
       allow read: if puedeVer(resource.data.elderUid);

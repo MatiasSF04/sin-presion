@@ -10,6 +10,7 @@ import { Boton } from "../../components/base/Boton";
 import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
 import { destinoSos, enlaceLlamada } from "../../services/sos.logic";
 import { registrarSos } from "../../services/sos.service";
+import { registrarError } from "../../services/errores.service";
 import s from "./HomePage.module.css";
 
 interface HomeCard {
@@ -50,7 +51,7 @@ export function HomePage() {
     setConfirmandoSos(false);
     // la llamada va primero; el registro (trazabilidad) se completa en segundo plano
     if (appUser) {
-      registrarSos(appUser.uid, destino).catch((e) => console.error("No se pudo registrar el SOS", e));
+      registrarSos(appUser.uid, destino).catch((e) => registrarError("sos.registrar", e));
     }
     window.location.href = enlaceLlamada(destino.telefono);
   }

@@ -3,6 +3,7 @@ import { useAuth } from "../../context/useAuth";
 import { Boton } from "../base/Boton";
 import { Dialogo } from "../base/Dialogo";
 import { signOut } from "../../services/auth.service";
+import { registrarError } from "../../services/errores.service";
 import s from "./BotonCerrarSesion.module.css";
 
 /**
@@ -23,7 +24,7 @@ export function BotonCerrarSesion() {
       refreshPinStatus();
       setPinUnlocked(false);
     } catch (e) {
-      console.error("No se pudo cerrar la sesión", e);
+      registrarError("sesion.cerrar", e);
       setError("No se pudo cerrar la sesión. Revisa tu conexión e intenta de nuevo.");
       setCerrando(false);
       setAbierto(false);
