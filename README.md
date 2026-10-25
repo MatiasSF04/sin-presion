@@ -17,6 +17,8 @@ Proyecto de título — Ingeniería en Computación e Informática, Universidad 
 - Node.js 24 o superior
 - Firebase CLI (`npm i -g firebase-tools`) para desplegar
 - Archivo `.env` en la raíz con las variables `VITE_FIREBASE_*` (no se versiona)
+- Archivo `android/app/google-services.json`, que se descarga desde Firebase Console → Configuración del proyecto → Tus apps → app Android `cl.sinpresion.app` (no se versiona)
+- Android Studio con JDK 21 para Gradle; clonar el repo en una ruta corta (p. ej. `C:\dev\sin-presion`) para evitar el límite de 260 caracteres de Windows
 
 ## Comandos
 
