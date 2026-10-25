@@ -32,3 +32,23 @@
   font-weight: var(--peso-fuerte);
   color: var(--color-texto-secundario);
 }
+
+/* ---------- datos del reloj (Health Connect) ---------- */
+
+.reloj {
+  margin-bottom: var(--espacio-5);
+}
+
+.relojAyuda {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  margin-top: var(--espacio-2);
+  text-align: center;
+}
+
+.relojMensaje {
+  font-size: var(--texto-base);
+  font-weight: var(--peso-fuerte);
+  margin-top: var(--espacio-2);
+  text-align: center;
+}

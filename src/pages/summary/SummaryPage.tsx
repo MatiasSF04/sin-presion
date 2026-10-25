@@ -61,6 +61,8 @@ function formatValue(reading: StoredVitalReading): string {
       return `Orinó ${v.veces} ${v.veces === 1 ? "vez" : "veces"}`;
     case "deposiciones":
       return `${v.veces} ${v.veces === 1 ? "deposición" : "deposiciones"}`;
+    case "pulso":
+      return `${v.promedio} ppm promedio (${v.minimo}–${v.maximo})`;
     default:
       return "—";
   }
@@ -94,6 +96,7 @@ const iconByType: Record<string, string> = {
   hidratacion: "🥤",
   diuresis: "🚻",
   deposiciones: "🧻",
+  pulso: "💓",
 };
 
 const CHART_WIDTH = 300;
@@ -285,7 +288,10 @@ export function SummaryPage() {
                   <div key={r.id} className={s.fila}>
                     <span className={s.filaIcono} aria-hidden="true">{iconByType[r.type] ?? "•"}</span>
                     <div className={s.filaTextos}>
-                      <p className={s.filaValor}>{formatValue(r)}</p>
+                      <p className={s.filaValor}>
+                        {formatValue(r)}
+                        {r.source === "device" && <span title="Desde el reloj"> ⌚</span>}
+                      </p>
                       <p className={s.filaHora}>{formatRelativeTime(r.recordedAt)}</p>
                     </div>
                     {badge && (

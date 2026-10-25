@@ -88,6 +88,9 @@ export function formatearValor(signo: SignoResumen, valor: Record<string, number
       .map((f) => `${f.label} ${num(f.key)} ${f.unit}`)
       .join(" · ");
   }
+  if (signo.type === "pulso") {
+    return `${num("promedio")} ppm promedio (${num("minimo")}–${num("maximo")})`;
+  }
   if (signo.type === "presion") {
     const pulso = typeof valor.pulso === "number" ? ` · ${num("pulso")} ppm` : "";
     return `${num("sistolica")}/${num("diastolica")} mmHg${pulso}`;

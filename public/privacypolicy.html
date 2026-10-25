@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SIN-PRESIÓN · Privacidad</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; background: #ffffff; color: #1f2937; font: 18px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 24px 20px 48px; }
+    h1 { font-size: 26px; margin: 0 0 4px; }
+    h2 { font-size: 20px; margin: 28px 0 8px; }
+    p, li { margin: 0 0 10px; }
+    ul { padding-left: 22px; }
+    .nota { color: #4b5563; font-size: 15px; }
+    .aviso { background: #fef2f2; border-left: 4px solid #e63946; padding: 12px 14px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Privacidad en SIN-PRESIÓN</h1>
+  <p class="nota">Versión 1.0 · Piloto del proyecto de título (Universidad Andrés Bello), octubre de 2026.</p>
+
+  <p>SIN-PRESIÓN es una agenda clínica para adultos mayores y su cuidador. Aquí explicamos, en simple,
+  qué datos usa la app, para qué y cómo puedes pedir que se borren.</p>
+
+  <p class="aviso"><strong>SIN-PRESIÓN no reemplaza la atención médica.</strong> No diagnostica ni da tratamientos.
+  Ante una emergencia, llama al <strong>131 (SAMU)</strong>.</p>
+
+  <h2>Qué datos guarda la app</h2>
+  <ul>
+    <li><strong>Tu cuenta:</strong> nombre, correo y si eres adulto mayor o cuidador.</li>
+    <li><strong>Tus tareas y recordatorios:</strong> por ejemplo medicamentos y horarios.</li>
+    <li><strong>Tus mediciones:</strong> presión, temperatura, glicemia, sueño, pasos, hidratación y otras que registres.</li>
+    <li><strong>El uso del botón de emergencia:</strong> cuándo se usó y a qué número se llamó.</li>
+    <li><strong>Datos técnicos:</strong> un identificador del teléfono para enviar avisos al cuidador y un registro de
+      fallas de la app, que se borra a los 30 días.</li>
+  </ul>
+
+  <h2>Datos de tu reloj (Health Connect)</h2>
+  <p>Si lo autorizas, la app <strong>lee</strong> desde Health Connect tu <strong>pulso, pasos y sueño</strong> de los
+  últimos 7 días, que la app de tu reloj (por ejemplo Samsung Health) dejó ahí. Con ellos guarda un resumen por día:</p>
+  <ul>
+    <li>Pasos totales del día.</li>
+    <li>Pulso promedio, mínimo y máximo del día.</li>
+    <li>Horas dormidas cada noche.</li>
+  </ul>
+  <p>La app <strong>no escribe ni borra</strong> nada en Health Connect, y no lee otros datos de salud.
+  Puedes quitar el permiso cuando quieras en <em>Ajustes → Health Connect → Permisos de apps → SIN-PRESIÓN</em>.
+  Las mediciones ya traídas se mantienen hasta que pidas borrarlas.</p>
+
+  <h2>Para qué se usan</h2>
+  <ul>
+    <li>Recordarte tus tareas y mostrarte tu resumen.</li>
+    <li>Que tu cuidador vinculado vea tus mediciones y cumplimiento, y reciba avisos si algo requiere atención.</li>
+    <li>Evaluar el piloto del proyecto de título, con resultados agregados y sin identificar a las personas.</li>
+  </ul>
+  <p>Los datos <strong>no se venden ni se comparten</strong> con fines publicitarios.</p>
+
+  <h2>Quién puede verlos</h2>
+  <ul>
+    <li>Tú.</li>
+    <li>El cuidador que vinculaste con tu código.</li>
+    <li>El equipo del proyecto, solo para dar soporte y analizar el piloto.</li>
+  </ul>
+
+  <h2>Dónde se guardan</h2>
+  <p>En Google Firebase (Cloud Firestore), en servidores de la región de Santiago de Chile, con acceso protegido por
+  usuario y contraseña y reglas que solo permiten ver los datos propios o los del adulto mayor vinculado.</p>
+
+  <h2>Cuánto tiempo y cómo borrarlos</h2>
+  <p>Los datos se conservan durante el piloto y el análisis de sus resultados. Puedes pedir en cualquier momento que se
+  borren tu cuenta y todos tus datos escribiendo al equipo de SIN-PRESIÓN, al contacto indicado en el consentimiento
+  del piloto. Desinstalar la app borra lo que hay en el teléfono, pero no lo guardado en la nube.</p>
+
+  <h2>Tu teléfono</h2>
+  <p>En la app para Android la sesión queda abierta. Te recomendamos usar el bloqueo de pantalla del teléfono
+  (PIN, patrón o huella) para que nadie más vea tus datos.</p>
+</main>
+</body>
+</html>

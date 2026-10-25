@@ -97,6 +97,7 @@ export function MedicionesCuidadorPage() {
                     <span className={s.filaTextos}>
                       <span className={s.filaSigno}>
                         <span aria-hidden="true">{signo?.icon}</span> {signo?.label ?? medicion.type}
+                        {medicion.source === "device" && <span title="Desde el reloj"> ⌚</span>}
                       </span>
                       <span>
                         {signo ? formatearValor(signo, medicion.value) : ""}

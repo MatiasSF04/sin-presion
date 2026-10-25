@@ -42,7 +42,7 @@ export function VitalsEntryPage() {
   const [elegidas, setElegidas] = useState<Record<string, string>>({});
   const [observaciones, setObservaciones] = useState("");
 
-  if (!config) {
+  if (!config || config.soloReloj) {
     return (
       <div className={s.pagina}>
         <EncabezadoPagina titulo="Medición" volverA="/vitals" />

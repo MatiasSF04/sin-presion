@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
@@ -10,6 +10,7 @@ import { Boton } from "../../components/base/Boton";
 import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
 import { destinoSos, enlaceLlamada } from "../../services/sos.logic";
 import { registrarSos } from "../../services/sos.service";
+import { permisosReloj, relojDisponible, sincronizarReloj } from "../../services/reloj.service";
 import { registrarError } from "../../services/errores.service";
 import s from "./HomePage.module.css";
 
@@ -31,6 +32,21 @@ export function HomePage() {
   const { perfil } = usePerfilAdulto(appUser?.uid);
   const destino = destinoSos(perfil.contactoEmergencia);
   const [confirmandoSos, setConfirmandoSos] = useState(false);
+
+  // datos del reloj: al abrir la app se traen en silencio, solo si ya dio permiso antes
+  const metasRef = useRef(perfil.metas);
+  useEffect(() => {
+    metasRef.current = perfil.metas;
+  }, [perfil.metas]);
+  const uid = appUser?.uid;
+  useEffect(() => {
+    if (!uid) return;
+    (async () => {
+      if (!(await relojDisponible())) return;
+      if ((await permisosReloj()).length === 0) return;
+      await sincronizarReloj(uid, metasRef.current);
+    })().catch((e) => registrarError("reloj.sincronizarAlAbrir", e));
+  }, [uid]);
 
   // refresca el banner y el progreso cada minuto
   useEffect(() => {

@@ -1,11 +1,11 @@
-import { collection, addDoc, Timestamp, query, where, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, Timestamp, query, where, orderBy, limit, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { evaluarMedicion, limpiarObservaciones, type OpcionSigno, type RangoOptimo } from "./vitals.logic";
 import { aplicarMetas, type MetaCampo } from "./perfil.logic";
 
 export type VitalType =
   | "presion" | "temperatura" | "sueno" | "azucar" | "pasos"
-  | "hidratacion" | "diuresis" | "deposiciones" | "otro";
+  | "hidratacion" | "diuresis" | "deposiciones" | "pulso" | "otro";
 
 interface VitalFieldConfig {
   key: string;
@@ -34,6 +34,8 @@ export interface VitalTypeConfig {
   opciones?: OpcionSigno[];
   /** Muestra un cuadro opcional de observaciones al registrar. */
   conObservaciones?: boolean;
+  /** Solo llega desde el reloj (Health Connect): no se ofrece para registrar a mano. */
+  soloReloj?: boolean;
 }
 
 export const VITAL_TYPES: VitalTypeConfig[] = [
@@ -157,7 +159,24 @@ export const VITAL_TYPES: VitalTypeConfig[] = [
     ],
     conObservaciones: true,
   },
+  // Pulso del día desde el reloj (Health Connect). Sin rango óptimo, igual que el pulso de la presión.
+  {
+    type: "pulso",
+    label: "Pulso del día",
+    icon: "💓",
+    color: "var(--color-emergencia)",
+    colorLight: "var(--color-emergencia-suave)",
+    fields: [
+      { key: "promedio", label: "Promedio", unit: "ppm", min: 30, max: 220, step: 1, default: 70 },
+      { key: "minimo", label: "Mínimo", unit: "ppm", min: 30, max: 220, step: 1, default: 55 },
+      { key: "maximo", label: "Máximo", unit: "ppm", min: 30, max: 220, step: 1, default: 100 },
+    ],
+    soloReloj: true,
+  },
 ];
+
+/** Los que se pueden registrar a mano (sin los que solo llegan desde el reloj). */
+export const VITAL_TYPES_MANUALES = VITAL_TYPES.filter((t) => !t.soloReloj);
 
 export function getVitalTypeConfig(type: string): VitalTypeConfig | undefined {
   return VITAL_TYPES.find((v) => v.type === type);
@@ -190,6 +209,43 @@ export async function addVitalReading(
     ...(observaciones ? { observaciones } : {}),
   });
   return { enRango, camposFuera };
+}
+
+/**
+ * Guarda una medición que vino del reloj con un id fijo (ver reloj.logic): si ya existe, Firestore
+ * rechaza la escritura (las mediciones no se editan) y no queda duplicada.
+ */
+export async function guardarMedicionReloj(
+  elderUid: string,
+  id: string,
+  type: VitalType,
+  value: Record<string, number>,
+  registradaEn: Date,
+  metasDelTipo?: Record<string, MetaCampo>
+): Promise<void> {
+  const campos = aplicarMetas(getVitalTypeConfig(type)?.fields ?? [], metasDelTipo);
+  const { enRango, camposFuera } = evaluarMedicion(campos, value);
+  await setDoc(doc(db, "vitalReadings", id), {
+    elderUid,
+    type,
+    value,
+    source: "device",
+    fueraDeRango: !enRango,
+    camposFueraDeRango: camposFuera,
+    recordedAt: Timestamp.fromDate(registradaEn),
+  });
+}
+
+/** Ids de las mediciones del adulto mayor desde una fecha (para no repetir las del reloj). */
+export async function idsMedicionesDesde(elderUid: string, desde: Date): Promise<Set<string>> {
+  const q = query(
+    collection(db, "vitalReadings"),
+    where("elderUid", "==", elderUid),
+    where("recordedAt", ">=", Timestamp.fromDate(desde)),
+    orderBy("recordedAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return new Set(snap.docs.map((d) => d.id));
 }
 
 export interface StoredVitalReading {
