@@ -6,6 +6,8 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "../../services/firebase";
+import { useAuth } from "../../context/useAuth";
+import { conTiempoLimite, mensajeErrorAcceso, MENSAJES_ACCESO, sinConexion } from "../../services/auth.logic";
 import { Boton } from "../../components/base/Boton";
 import s from "./Acceso.module.css";
 
@@ -15,20 +17,26 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
+  const { errorPerfil, reintentarPerfil, limpiarErrorPerfil } = useAuth();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setNeedsVerification(false);
+    limpiarErrorPerfil();
 
     if (!email || !password) {
       setError("Ingresa tu correo y contraseña.");
       return;
     }
+    if (sinConexion()) {
+      setError(MENSAJES_ACCESO.conexion);
+      return;
+    }
 
     setLoading(true);
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
+      const credential = await conTiempoLimite(signInWithEmailAndPassword(auth, email, password));
 
       if (!credential.user.emailVerified) {
         setNeedsVerification(true);
@@ -36,23 +44,43 @@ export function LoginPage() {
         setLoading(false);
         return;
       }
-      // Si el correo está verificado, el AuthContext detecta el cambio de sesión
-      // automáticamente y las rutas redirigen solas a la pantalla de PIN.
-    } catch {
-      setError("Correo o contraseña incorrectos.");
+      // Correo verificado: se espera el perfil para poder avisar si falla (sin conexión o
+      // cuenta sin perfil). Si se carga bien, las rutas cambian solas de pantalla.
+      const errorAlCargar = await reintentarPerfil();
+      if (errorAlCargar) {
+        setError(errorAlCargar);
+        setLoading(false);
+      }
+    } catch (err) {
+      setError(mensajeErrorAcceso(err, "login"));
       setLoading(false);
     }
+  }
+
+  // Sesión guardada pero el perfil no cargó (p. ej. se abrió la app sin internet):
+  // se puede reintentar sin volver a escribir correo y contraseña.
+  const puedeReintentar = !!errorPerfil && !!auth.currentUser;
+
+  async function reintentar() {
+    setError("");
+    setLoading(true);
+    const errorAlCargar = await reintentarPerfil();
+    if (errorAlCargar) setLoading(false);
   }
 
   async function handleResendVerification() {
     setError("");
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(credential.user);
+      const credential = await conTiempoLimite(signInWithEmailAndPassword(auth, email, password));
+      await conTiempoLimite(sendEmailVerification(credential.user));
       await signOut(auth);
       setError("Te enviamos un nuevo correo de verificación. Revisa tu bandeja.");
-    } catch {
-      setError("No pudimos reenviar el correo, intenta de nuevo.");
+    } catch (err) {
+      setError(
+        mensajeErrorAcceso(err, "login") === MENSAJES_ACCESO.conexion
+          ? MENSAJES_ACCESO.conexion
+          : "No pudimos reenviar el correo, intenta de nuevo."
+      );
     }
   }
 
@@ -83,7 +111,13 @@ export function LoginPage() {
           autoComplete="current-password"
         />
 
-        {error && <p className={s.error} role="alert">{error}</p>}
+        {(error || errorPerfil) && <p className={s.error} role="alert">{error || errorPerfil}</p>}
+
+        {puedeReintentar && (
+          <Boton variante="secundario" bloque onClick={reintentar} disabled={loading}>
+            Reintentar
+          </Boton>
+        )}
 
         {needsVerification && (
           <div className={s.verificacion}>

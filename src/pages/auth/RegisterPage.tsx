@@ -3,25 +3,10 @@ import { Link } from "react-router-dom";
 import { signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "../../services/firebase";
 import { registerWithEmail, type UserRole } from "../../services/auth.service";
+import { conTiempoLimite, mensajeErrorAcceso, MENSAJES_ACCESO, sinConexion } from "../../services/auth.logic";
 import { Boton } from "../../components/base/Boton";
 import { unirClases } from "../../estilos/unirClases";
 import s from "./Acceso.module.css";
-
-function friendlyError(err: unknown): string {
-  const code = (err as { code?: string })?.code ?? "";
-  switch (code) {
-    case "auth/email-already-in-use":
-      return "Ya existe una cuenta con ese correo.";
-    case "auth/invalid-email":
-      return "El correo no es válido.";
-    case "auth/weak-password":
-      return "La contraseña debe tener al menos 6 caracteres.";
-    case "auth/network-request-failed":
-      return "Sin conexión. Revisa tu internet e intenta de nuevo.";
-    default:
-      return "No pudimos crear la cuenta. Intenta de nuevo.";
-  }
-}
 
 export function RegisterPage() {
   const [name, setName] = useState("");
@@ -50,14 +35,19 @@ export function RegisterPage() {
       return;
     }
 
+    if (sinConexion()) {
+      setError(MENSAJES_ACCESO.conexion);
+      return;
+    }
+
     setLoading(true);
     try {
-      await registerWithEmail(email.trim(), password, name.trim(), role);
+      await conTiempoLimite(registerWithEmail(email.trim(), password, name.trim(), role));
       // La cuenta queda sin verificar: se cierra la sesión y se pide verificar el correo.
       await firebaseSignOut(auth);
       setDone(true);
     } catch (err) {
-      setError(friendlyError(err));
+      setError(mensajeErrorAcceso(err, "registro"));
     } finally {
       setLoading(false);
     }

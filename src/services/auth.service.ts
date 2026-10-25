@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { cancelarRecordatorios } from "./reminders.service";
 import { quitarTokenPush } from "./push.service";
+import { ErrorPerfilInexistente } from "./auth.logic";
 
 export type UserRole = "elder" | "caregiver";
 
@@ -29,17 +30,23 @@ export async function registerWithEmail(
   role: UserRole
 ): Promise<AppUser> {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
-  await sendEmailVerification(credential.user);
-
   const appUser: AppUser = { uid: credential.user.uid, role, name, email };
 
-  await setDoc(doc(db, "users", credential.user.uid), {
-    role,
-    name,
-    email,
-    createdAt: Timestamp.now(),
-  });
+  // Primero el perfil y después el correo de verificación: si el perfil no se puede guardar,
+  // se borra la cuenta recién creada para no dejar una cuenta "a medias" (sin perfil en users).
+  try {
+    await setDoc(doc(db, "users", credential.user.uid), {
+      role,
+      name,
+      email,
+      createdAt: Timestamp.now(),
+    });
+  } catch (e) {
+    await credential.user.delete().catch(() => {});
+    throw e;
+  }
 
+  await sendEmailVerification(credential.user);
   return appUser;
 }
 
@@ -47,7 +54,7 @@ export async function registerWithEmail(
 export async function fetchAppUser(uid: string): Promise<AppUser> {
   const snapshot = await getDoc(doc(db, "users", uid));
   if (!snapshot.exists()) {
-    throw new Error("Usuario no encontrado en la base de datos");
+    throw new ErrorPerfilInexistente();
   }
   const data = snapshot.data();
   return {
