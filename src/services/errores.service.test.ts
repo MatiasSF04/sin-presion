@@ -50,7 +50,7 @@ describe("registrarError", () => {
       codigo: "permission-denied",
       uid: "uid-1",
       plataforma: "android",
-      versionApp: "1.0.0",
+      versionApp: __APP_VERSION__, // la de package.json (vite.config.ts)
       creadoEn: "__AHORA__",
     });
     const dias = (datos.expiraEn.ms - antes) / 86_400_000;
