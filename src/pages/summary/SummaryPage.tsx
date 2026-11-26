@@ -290,7 +290,7 @@ export function SummaryPage() {
                     <div className={s.filaTextos}>
                       <p className={s.filaValor}>
                         {formatValue(r)}
-                        {r.source === "device" && <span title="Desde el reloj"> ⌚</span>}
+                        {r.source === "device" && <span title="Desde Health Connect (reloj u otro equipo)"> ⌚</span>}
                       </p>
                       <p className={s.filaHora}>{formatRelativeTime(r.recordedAt)}</p>
                     </div>

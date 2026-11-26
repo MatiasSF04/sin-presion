@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import { useUpcomingTasks } from "../../hooks/useUpcomingTasks";
@@ -10,9 +10,13 @@ import { Boton } from "../../components/base/Boton";
 import { usePerfilAdulto } from "../../hooks/usePerfilAdulto";
 import { destinoSos, enlaceLlamada } from "../../services/sos.logic";
 import { registrarSos } from "../../services/sos.service";
-import { permisosReloj, relojDisponible, sincronizarReloj } from "../../services/reloj.service";
+import { useSincronizarReloj } from "../../hooks/useSincronizarReloj";
 import { registrarError } from "../../services/errores.service";
+import { unirClases } from "../../estilos/unirClases";
 import s from "./HomePage.module.css";
+
+/** El resultado de sincronizar el reloj se muestra unos segundos y desaparece solo. */
+const DURACION_AVISO_RELOJ_MS = 8000;
 
 interface HomeCard {
   key: string;
@@ -33,20 +37,24 @@ export function HomePage() {
   const destino = destinoSos(perfil.contactoEmergencia);
   const [confirmandoSos, setConfirmandoSos] = useState(false);
 
-  // datos del reloj: al abrir la app se traen en silencio, solo si ya dio permiso antes
-  const metasRef = useRef(perfil.metas);
+  // datos del reloj: ⌚ sincroniza aquí mismo; además se traen en silencio al abrir la app y al
+  // volver a ella desde otra (solo si ya dio permiso antes)
+  const reloj = useSincronizarReloj(appUser?.uid, perfil.metas);
+  const { sincronizarEnSilencio, mensaje: mensajeReloj, limpiarMensaje } = reloj;
   useEffect(() => {
-    metasRef.current = perfil.metas;
-  }, [perfil.metas]);
-  const uid = appUser?.uid;
+    sincronizarEnSilencio();
+    const alVolver = () => {
+      if (document.visibilityState === "visible") sincronizarEnSilencio();
+    };
+    document.addEventListener("visibilitychange", alVolver);
+    return () => document.removeEventListener("visibilitychange", alVolver);
+  }, [sincronizarEnSilencio]);
+
   useEffect(() => {
-    if (!uid) return;
-    (async () => {
-      if (!(await relojDisponible())) return;
-      if ((await permisosReloj()).length === 0) return;
-      await sincronizarReloj(uid, metasRef.current);
-    })().catch((e) => registrarError("reloj.sincronizarAlAbrir", e));
-  }, [uid]);
+    if (!mensajeReloj) return;
+    const id = setTimeout(limpiarMensaje, DURACION_AVISO_RELOJ_MS);
+    return () => clearTimeout(id);
+  }, [mensajeReloj, limpiarMensaje]);
 
   // refresca el banner y el progreso cada minuto
   useEffect(() => {
@@ -122,17 +130,32 @@ export function HomePage() {
           <span aria-hidden="true">👤</span>
         </button>
         <span className={s.fecha}>{now.toLocaleDateString("es-CL")}</span>
-        <button
-          type="button"
-          className={s.circulo}
-          onClick={() => navigate("/settings")}
-          aria-label="Sincronizar smartwatch"
-        >
-          <span aria-hidden="true">⌚</span>
-        </button>
+        {reloj.disponible ? (
+          <button
+            type="button"
+            className={s.circulo}
+            onClick={reloj.sincronizar}
+            disabled={reloj.sincronizando}
+            aria-label={reloj.sincronizando ? "Sincronizando el reloj" : "Sincronizar con mi reloj"}
+          >
+            <span aria-hidden="true">{reloj.sincronizando ? "⏳" : "⌚"}</span>
+          </button>
+        ) : (
+          <span className={s.espacio} aria-hidden="true" />
+        )}
       </header>
 
       <main className={s.contenido}>
+        {mensajeReloj && (
+          <p
+            className={unirClases(s.avisoReloj, mensajeReloj.tipo === "exito" && s.avisoRelojExito)}
+            role="status"
+          >
+            <span className={s.avisoRelojTitulo}>{mensajeReloj.titulo}</span>
+            {mensajeReloj.detalle}
+          </p>
+        )}
+
         <ReminderBanner tasks={todays} now={now} onGo={() => navigate("/tasks")} />
 
         <BarraProgreso porcentaje={progress.pct} etiqueta="Tareas completadas hoy" />

@@ -1,8 +1,9 @@
 /** Pruebas de reloj.logic: resumen diario de pasos, pulso y sueño desde Health Connect. */
 import { describe, it, expect } from "vitest";
 import {
-  DIAS_A_REVISAR, fechaLocal, idMedicionReloj, medicionesDePasos, medicionesDePulso, medicionesDeSueno,
-  pendientesDeGuardar, type CuboDiario, type SesionSueno,
+  DIAS_A_REVISAR, fechaLocal, idMedicionPuntual, idMedicionReloj, medicionesDeAzucar, medicionesDeHidratacion,
+  medicionesDePasos, medicionesDePresion, medicionesDePulso, medicionesDeSueno, medicionesDeTemperatura,
+  pendientesDeGuardar, type CuboDiario, type MuestraSalud, type SesionSueno,
 } from "./reloj.logic";
 
 const UID = "uid-ana";
@@ -82,6 +83,82 @@ describe("medicionesDeSueno", () => {
 
   it("ignora sesiones marcadas como despierto o en cama", () => {
     expect(medicionesDeSueno(UID, [noche(23, 23, 24, 7, { sleepState: "awake" })], AHORA)).toEqual([]);
+  });
+});
+
+const muestra = (d: number, h: number, value: number, extra: Partial<MuestraSalud> = {}): MuestraSalud => ({
+  startDate: dia(d, h),
+  endDate: dia(d, h),
+  value,
+  ...extra,
+});
+
+describe("medicionesDePresion", () => {
+  it("guarda cada medición con sistólica y diastólica enteras, incluidas las de hoy", () => {
+    const r = medicionesDePresion(
+      UID,
+      [muestra(24, 8, 0, { systolic: 128.6, diastolic: 82.2 }), muestra(25, 9, 0, { systolic: 141, diastolic: 90 })],
+      AHORA
+    );
+    expect(r.map((m) => [m.fecha, m.valor])).toEqual([
+      ["2026-10-24", { sistolica: 129, diastolica: 82 }],
+      ["2026-10-25", { sistolica: 141, diastolica: 90 }],
+    ]);
+    expect(r[1].id).toBe(idMedicionPuntual(UID, "presion", new Date(2026, 9, 25, 9)));
+    expect(r[1].registradaEn.getHours()).toBe(9);
+  });
+
+  it("descarta muestras sin diastólica, futuras o fuera de la ventana", () => {
+    const r = medicionesDePresion(
+      UID,
+      [
+        muestra(24, 8, 0, { systolic: 120 }),
+        muestra(25, 18, 0, { systolic: 120, diastolic: 80 }), // después de "ahora"
+        muestra(25 - DIAS_A_REVISAR - 2, 8, 0, { systolic: 120, diastolic: 80 }),
+      ],
+      AHORA
+    );
+    expect(r).toEqual([]);
+  });
+});
+
+describe("medicionesDeAzucar", () => {
+  it("redondea mg/dL y convierte mmol/L", () => {
+    const r = medicionesDeAzucar(UID, [muestra(25, 7, 98.4), muestra(25, 13, 7, { unit: "mmol/L" })], AHORA);
+    expect(r.map((m) => m.valor.valor)).toEqual([98, 126]);
+    expect(r[0].tipo).toBe("azucar");
+  });
+});
+
+describe("medicionesDeTemperatura", () => {
+  it("deja un decimal y convierte °F", () => {
+    const r = medicionesDeTemperatura(
+      UID,
+      [muestra(24, 22, 36.84, { unit: "celsius" }), muestra(25, 8, 98.6, { unit: "fahrenheit" })],
+      AHORA
+    );
+    expect(r.map((m) => m.valor.valor)).toEqual([36.8, 37]);
+  });
+});
+
+describe("medicionesDeHidratacion", () => {
+  it("suma los litros de cada día terminado y los convierte a vasos de 250 mL", () => {
+    const r = medicionesDeHidratacion(
+      UID,
+      [
+        muestra(24, 9, 0.5, { unit: "liter" }),
+        muestra(24, 14, 0.75, { unit: "liter" }),
+        muestra(25, 10, 1, { unit: "liter" }), // hoy: se guarda mañana
+      ],
+      AHORA
+    );
+    expect(r).toHaveLength(1);
+    expect(r[0].valor).toEqual({ vasos: 5 });
+    expect(r[0].id).toBe(idMedicionReloj(UID, "hidratacion", "2026-10-24"));
+  });
+
+  it("no guarda días con menos de medio vaso", () => {
+    expect(medicionesDeHidratacion(UID, [muestra(24, 9, 0.1, { unit: "liter" })], AHORA)).toEqual([]);
   });
 });
 

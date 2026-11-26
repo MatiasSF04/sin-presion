@@ -52,3 +52,7 @@
   margin-top: var(--espacio-2);
   text-align: center;
 }
+
+.relojDetalle {
+  font-weight: normal;
+}

@@ -79,3 +79,29 @@
   font-weight: var(--peso-fuerte);
   text-align: left;
 }
+
+/* ocupa el lugar del botón del reloj cuando no hay Health Connect (la fecha queda centrada) */
+.espacio {
+  width: var(--tamano-toque);
+  height: var(--tamano-toque);
+}
+
+/* ---------- resultado de sincronizar el reloj ---------- */
+
+.avisoReloj {
+  margin-bottom: var(--espacio-4);
+  padding: var(--espacio-4);
+  border-radius: var(--radio-tarjeta);
+  text-align: center;
+  font-size: var(--texto-base);
+  background: var(--color-advertencia-suave);
+}
+
+.avisoRelojExito {
+  background: var(--color-exito-suave);
+}
+
+.avisoRelojTitulo {
+  display: block;
+  font-weight: var(--peso-fuerte);
+}
